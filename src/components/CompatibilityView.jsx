@@ -433,10 +433,10 @@ export default function CompatibilityView({
                   <tr className="bg-[#faf7f0] border-b border-[#e8e2d5] text-[#6e6456]">
                     <th className="py-2.5 px-3 font-bold w-1/4">Yếu Tố Đối Chiếu</th>
                     <th className="py-2.5 px-3 font-black text-[#c48b4d] w-3/8">
-                      {compatResult.info1.name} ({compatResult.info1.gender === 'nam' ? 'Nam' : 'Nữ'})
+                      {compatResult.info1.name} ({compatResult.info1.gender?.includes('Nam') || compatResult.info1.gender === 'nam' ? 'Nam' : 'Nữ'})
                     </th>
                     <th className="py-2.5 px-3 font-black text-[#0284c7] w-3/8">
-                      {compatResult.info2.name} ({compatResult.info2.gender === 'nam' ? 'Nam' : 'Nữ'})
+                      {compatResult.info2.name} ({compatResult.info2.gender?.includes('Nam') || compatResult.info2.gender === 'nam' ? 'Nam' : 'Nữ'})
                     </th>
                   </tr>
                 </thead>
