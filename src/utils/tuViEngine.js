@@ -24,11 +24,11 @@ export function determineCuc(menhPos, canYear) {
   const row = canIndex % 5;
   // Bảng ngũ cục theo Can Năm và Chi của Cung Mệnh (Tý/Sửu:0, Dần/Mão:1, Thìn/Tỵ:2, Ngọ/Mùi:3, Thân/Dậu:4, Tuất/Hợi:5)
   const cucMatrix = [
-    [2, 6, 5, 3, 4, 5], // Giáp, Kỷ
-    [6, 5, 3, 4, 5, 2], // Ất, Canh
-    [5, 3, 4, 5, 2, 6], // Bính, Tân
-    [3, 4, 5, 2, 6, 5], // Đinh, Nhâm
-    [4, 5, 2, 6, 5, 3]  // Mậu, Quý
+    [2, 6, 3, 5, 4, 6], // Giáp, Kỷ
+    [6, 5, 4, 3, 2, 5], // Ất, Canh
+    [5, 3, 2, 4, 6, 3], // Bính, Tân
+    [3, 4, 6, 2, 5, 4], // Đinh, Nhâm
+    [4, 2, 5, 6, 3, 2]  // Mậu, Quý
   ];
   const pairIdx = Math.floor(menhPos / 2);
   return cucMatrix[row][pairIdx] || 2;
@@ -36,7 +36,7 @@ export function determineCuc(menhPos, canYear) {
 
 // Bảng An Sao Tử Vi Chuẩn Tuyệt Đối 100% cho 5 Cục (30 ngày âm lịch)
 const TU_VI_TABLE = {
-  2: [3, 1, 2, 0, 1, 11, 0, 10, 11, 9, 10, 8, 9, 7, 8, 6, 7, 5, 6, 4, 5, 3, 4, 2, 3, 1, 2, 0, 1, 11],
+  2: [1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 0, 0, 1, 1, 2, 2, 3, 3, 4],
   3: [4, 1, 2, 5, 2, 3, 6, 3, 4, 7, 4, 5, 8, 5, 6, 9, 6, 7, 10, 7, 8, 11, 8, 9, 0, 9, 10, 1, 10, 11],
   4: [11, 4, 1, 2, 0, 5, 2, 3, 1, 6, 3, 4, 2, 7, 4, 5, 3, 8, 5, 6, 4, 9, 6, 7, 5, 10, 7, 8, 6, 11],
   5: [6, 11, 4, 1, 2, 7, 0, 5, 2, 3, 8, 1, 6, 3, 4, 9, 2, 7, 4, 5, 10, 3, 8, 5, 6, 11, 4, 9, 6, 7],
@@ -188,12 +188,22 @@ export function createTuViChart({ name, gender, solarDay, solarMonth, solarYear,
   // Tương quan Ngũ hành Mệnh & Cục
   const cucNguHanh = cucNumber === 2 ? "Thủy" : cucNumber === 3 ? "Mộc" : cucNumber === 4 ? "Kim" : cucNumber === 5 ? "Thổ" : "Hỏa";
   const menhNguHanhSimple = nguHanh.includes("Mộc") ? "Mộc" : nguHanh.includes("Hỏa") ? "Hỏa" : nguHanh.includes("Thổ") ? "Thổ" : nguHanh.includes("Kim") ? "Kim" : "Thủy";
+  
+  const sinhMap = { "Thủy": "Mộc", "Mộc": "Hỏa", "Hỏa": "Thổ", "Thổ": "Kim", "Kim": "Thủy" };
+  const khacMap = { "Thủy": "Hỏa", "Hỏa": "Kim", "Kim": "Mộc", "Mộc": "Thổ", "Thổ": "Thủy" };
+
   let cucMenhRelation = "(Bình hòa)";
-  if (cucNguHanh === "Thủy" && menhNguHanhSimple === "Mộc") cucMenhRelation = "(Cục Thủy sinh Mệnh Mộc)";
-  else if (cucNguHanh === "Mộc" && menhNguHanhSimple === "Hỏa") cucMenhRelation = "(Cục Mộc sinh Mệnh Hỏa)";
-  else if (cucNguHanh === "Hỏa" && menhNguHanhSimple === "Thổ") cucMenhRelation = "(Cục Hỏa sinh Mệnh Thổ)";
-  else if (cucNguHanh === "Thổ" && menhNguHanhSimple === "Kim") cucMenhRelation = "(Cục Thổ sinh Mệnh Kim)";
-  else if (cucNguHanh === "Kim" && menhNguHanhSimple === "Thủy") cucMenhRelation = "(Cục Kim sinh Mệnh Thủy)";
+  if (cucNguHanh === menhNguHanhSimple) {
+    cucMenhRelation = "(Bình hòa)";
+  } else if (sinhMap[cucNguHanh] === menhNguHanhSimple) {
+    cucMenhRelation = `(Cục ${cucNguHanh} sinh Mệnh ${menhNguHanhSimple})`;
+  } else if (sinhMap[menhNguHanhSimple] === cucNguHanh) {
+    cucMenhRelation = `(Mệnh ${menhNguHanhSimple} sinh Cục ${cucNguHanh})`;
+  } else if (khacMap[cucNguHanh] === menhNguHanhSimple) {
+    cucMenhRelation = `(Cục ${cucNguHanh} khắc Mệnh ${menhNguHanhSimple})`;
+  } else if (khacMap[menhNguHanhSimple] === cucNguHanh) {
+    cucMenhRelation = `(Mệnh ${menhNguHanhSimple} khắc Cục ${cucNguHanh})`;
+  }
 
   // 4. Lai Nhân Cung (Cung có Can trùng với Can năm sinh)
   const laiNhanPos = cungCanList.findIndex(c => c === yearCan);
@@ -554,20 +564,71 @@ export function createTuViChart({ name, gender, solarDay, solarMonth, solarYear,
   const daiVanCungMatrix = new Array(12);
   const luuNienCungMatrix = new Array(12);
 
+  // Đại Hạn 10 năm cho từng cung
   for (let i = 0; i < 12; i++) {
     const offset = isDuongNamAmNu ? i : (12 - i) % 12;
     const pos = (menhPos + offset) % 12;
     daiHanMatrix[pos] = cucNumber + i * 10;
-    daiVanCungMatrix[pos] = `ĐV.${cungNamesArr[pos].toUpperCase()}`;
   }
 
-  // Khởi tiểu hạn tháng: Bắt đầu từ cung tiểu hạn năm tính theo tháng sinh và giờ sinh
+  // Tuổi âm lịch tại năm xem
+  const age = (viewYear - lunarYear + 1);
+
+  // Cung Đại Vận hiện tại (chứa tuổi xem hạn)
+  let currentDaiVanPos = menhPos;
   for (let i = 0; i < 12; i++) {
-    // Tháng 1 khởi từ cung tiểu hạn, mỗi tháng 1 cung thuận
-    const monthIndex = (i + 1);
-    const pos = (menhPos + i) % 12;
-    thangTieuHanMatrix[pos] = `Th.${monthIndex}`;
-    luuNienCungMatrix[pos] = `LN.${cungNamesArr[pos].toUpperCase()}`;
+    const offset = isDuongNamAmNu ? i : (12 - i) % 12;
+    const pos = (menhPos + offset) % 12;
+    const startAge = cucNumber + i * 10;
+    const endAge = startAge + 9;
+    if (age >= startAge && age <= endAge) {
+      currentDaiVanPos = pos;
+      break;
+    }
+  }
+
+  // An 12 Cung Đại Vận (ĐV.) khởi từ cung Đại Vận hiện tại theo chiều Đại Vận
+  const CUNG_NAMES_ABBR = [
+    "MỆNH", "HUYNH", "PHỐI", "TỬ", "TÀI", "TẬT",
+    "DI", "NÔ", "QUAN", "ĐIỀN", "PHÚC", "PHỤ"
+  ];
+  for (let i = 0; i < 12; i++) {
+    const offset = isDuongNamAmNu ? i : (12 - i) % 12;
+    const pos = (currentDaiVanPos + offset) % 12;
+    daiVanCungMatrix[pos] = `ĐV.${CUNG_NAMES_ABBR[i]}`;
+  }
+
+  // Cung Tiểu Hạn năm xem
+  const tieuHanStart1Tuoi = isMale
+    ? (4 + yearChiIndex) % 12
+    : (10 - yearChiIndex + 12) % 12;
+  const tieuHanCungYear = isMale
+    ? (((tieuHanStart1Tuoi - (age - 1)) % 12 + 120) % 12)
+    : ((tieuHanStart1Tuoi + (age - 1)) % 12);
+
+  // Khởi tiểu hạn tháng (Th.1 -> Th.12): Bắt đầu từ cung tiểu hạn năm, đi thuận
+  for (let i = 0; i < 12; i++) {
+    const pos = (tieuHanCungYear + i) % 12;
+    thangTieuHanMatrix[pos] = `Th.${i + 1}`;
+  }
+
+  // Cung Lưu Niên (LN.): Nam khởi tại Chi năm sinh đi nghịch, Nữ khởi tại Tiểu Hạn 1 tuổi đi thuận
+  const CUNG_NAMES_THUAN_ABBR = [
+    "MỆNH", "PHỤ", "PHÚC", "ĐIỀN", "QUAN", "NÔ",
+    "DI", "TẬT", "TÀI", "TỬ", "PHỐI", "HUYNH"
+  ];
+  if (isMale) {
+    const lnStart = yearChiIndex; // Nam khởi Chi năm sinh
+    for (let i = 0; i < 12; i++) {
+      const pos = (lnStart - i + 120) % 12; // Đi nghịch
+      luuNienCungMatrix[pos] = `LN.${CUNG_NAMES_ABBR[i]}`;
+    }
+  } else {
+    const lnStart = tieuHanStart1Tuoi; // Nữ khởi Tiểu Hạn 1 tuổi
+    for (let i = 0; i < 12; i++) {
+      const pos = (lnStart + i) % 12; // Đi thuận
+      luuNienCungMatrix[pos] = `LN.${CUNG_NAMES_THUAN_ABBR[i]}`;
+    }
   }
 
   // 21. Chủ Mệnh & Chủ Thân
