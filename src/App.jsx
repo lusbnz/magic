@@ -25,10 +25,12 @@ export default function App() {
   const [chartData, setChartData] = useState(null);
   const [analysisText, setAnalysisText] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isBoardLoading, setIsBoardLoading] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState(false);
   const defaultKey = import.meta.env.VITE_GEMINI_API_KEY || (typeof window !== 'undefined' ? atob('QVEuQWI4Uk42SkI2Y3c4OTNsTGVHSUZVdk5DdEpITkZncTRGQWtZSUtucC15MmxQYWVTSUE=') : '');
   const [apiKey, setApiKey] = useState(defaultKey);
   const [selectedCungIndex, setSelectedCungIndex] = useState(null);
+  const currentRequestIdRef = React.useRef(0);
 
   // History Sidebar state
   const [isHistoryOpen, setIsHistoryOpen] = useState(false);
@@ -49,7 +51,10 @@ export default function App() {
 
   const handleGenerateChart = async (dataToSubmit) => {
     const data = dataToSubmit || formData;
+    const requestId = ++currentRequestIdRef.current;
+
     setLoading(true);
+    setIsBoardLoading(true);
     setIsAiLoading(true);
     setAnalysisText('');
 
@@ -58,10 +63,19 @@ export default function App() {
       await saveProfile(data);
       await loadHistoryProfiles();
 
-      // 2. Tạo bàn lá số và hiển thị ngay lập tức
+      // 2. Tạo bàn lá số
       const chart = createTuViChart(data);
+      if (requestId !== currentRequestIdRef.current) return;
+
       setChartData(chart);
       setSelectedCungIndex(chart.menhPos);
+
+      // Hiệu ứng Shimmer mượt mà cho 12 Cung (600ms) trước khi mở đầy đủ
+      await new Promise(resolve => setTimeout(resolve, 600));
+      if (requestId !== currentRequestIdRef.current) return;
+
+      setIsBoardLoading(false);
+      setLoading(false); // Tắt loading của form ngay khi lá số đã sẵn sàng
 
       // Hiệu ứng nhẹ ấm áp
       confetti({
@@ -71,20 +85,32 @@ export default function App() {
         colors: ['#c48b4d', '#f59e0b', '#d97706', '#fef3c7']
       });
 
-      // 3. Gọi AI luận giải (đang có hiệu ứng Shimmer ở cột phải)
+      // 3. Gọi AI luận giải (tiếp tục chạy song song với hiệu ứng Shimmer ở cột phải)
       const aiResult = await analyzeTuViWithAI(chart, apiKey);
+      if (requestId !== currentRequestIdRef.current) return;
       setAnalysisText(aiResult);
     } catch (err) {
-      console.error("Lỗi tạo lá số:", err);
-      alert("Đã xảy ra lỗi khi tạo lá số. Xin vui lòng kiểm tra lại thông tin!");
+      if (requestId === currentRequestIdRef.current) {
+        console.error("Lỗi tạo lá số:", err);
+        alert("Đã xảy ra lỗi khi tạo lá số. Xin vui lòng kiểm tra lại thông tin!");
+      }
     } finally {
-      setLoading(false);
-      setIsAiLoading(false);
+      if (requestId === currentRequestIdRef.current) {
+        setLoading(false);
+        setIsBoardLoading(false);
+        setIsAiLoading(false);
+      }
     }
   };
 
   const handleSelectProfileFromHistory = (profile) => {
-    setFormData({
+    // Hủy bỏ trạng thái loading cũ nếu có
+    currentRequestIdRef.current++;
+    setLoading(false);
+    setIsBoardLoading(false);
+    setIsAiLoading(false);
+
+    const profileData = {
       name: profile.name,
       gender: profile.gender,
       solarDay: profile.solarDay,
@@ -92,8 +118,10 @@ export default function App() {
       solarYear: profile.solarYear,
       hourChiIndex: profile.hourChiIndex,
       viewYear: profile.viewYear
-    });
-    // Nếu đang ở màn hình lá số, chuyển về form để xem hoặc cho phép bấm xem
+    };
+    setFormData(profileData);
+
+    // Nếu đang ở màn hình lá số, chuyển về form hoặc có thể bấm xem lại
     if (chartData) {
       setChartData(null);
       setAnalysisText('');
@@ -114,6 +142,10 @@ export default function App() {
   };
 
   const handleReset = () => {
+    currentRequestIdRef.current++;
+    setLoading(false);
+    setIsBoardLoading(false);
+    setIsAiLoading(false);
     setChartData(null);
     setAnalysisText('');
     setSelectedCungIndex(null);
@@ -150,10 +182,6 @@ export default function App() {
                 </span>
               )}
             </button>
-            <div className="h-4 w-[1px] bg-[#e8e3d7] hidden sm:block"></div>
-            <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-[#fef7ee] text-[#c48b4d] border border-[#fbd38d] font-semibold hidden sm:inline-block">
-              Warm Aesthetic
-            </span>
           </div>
         </div>
       </nav>
@@ -232,6 +260,7 @@ export default function App() {
                   chartData={chartData}
                   selectedCungIndex={selectedCungIndex}
                   onSelectCung={(idx) => setSelectedCungIndex(idx)}
+                  isLoading={isBoardLoading}
                 />
               </div>
 
@@ -247,14 +276,6 @@ export default function App() {
           </div>
         )}
       </div>
-
-      {/* Clean Warm Footer */}
-      <footer className="border-t border-[#e8e3d7] py-5 bg-[#ffffff] text-center text-xs text-[#8c7f6e] mt-8">
-        <div className="w-full px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <span>© 2026 Tử Vi — Ứng dụng Huyền Học Tinh Hoa & Trí Tuệ Nhân Tạo.</span>
-          <span className="text-[#5e5343] font-medium">Ấm áp • Tối giản • Chuẩn xác</span>
-        </div>
-      </footer>
     </div>
   );
 }

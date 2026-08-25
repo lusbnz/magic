@@ -1,7 +1,175 @@
 import React, { useState, useRef, useEffect } from 'react';
 import CungBox from './CungBox';
 
-export default function TuViBoard({ chartData, selectedCungIndex, onSelectCung }) {
+export default function TuViBoard({ chartData, selectedCungIndex, onSelectCung, isLoading = false }) {
+  // Skeleton Shimmer Loading State cho Thiên Bàn 12 Cung & Trung Cung
+  if (isLoading || !chartData) {
+    const skeletonCungPositions = [5, 6, 7, 8, 4, 9, 3, 10, 2, 1, 0, 11];
+    return (
+      <div className="warm-card p-4 sm:p-6 mb-6 relative">
+        {/* Header Loading */}
+        <div className="flex flex-col border-b border-[#eee8dc] pb-3 mb-4 gap-2.5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+            <div>
+              <div className="flex items-center gap-2">
+                <h3 className="text-base sm:text-lg font-black text-[#241e17] tracking-tight">
+                  Thiên Bàn 12 Cung & Mối Quan Hệ Chiếu Mệnh
+                </h3>
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#fef7ee] text-[#c48b4d] border border-[#fbd38d] animate-pulse">
+                  Đang an sao & đối chiếu...
+                </span>
+              </div>
+              <p className="text-xs text-[#6e6456]">
+                Hệ thống đang thiết lập tọa độ 12 Cung và các luồng liên kết Tam Hợp / Chính Chiếu
+              </p>
+            </div>
+            <div className="flex items-center gap-2 text-xs">
+              <div className="h-6 w-20 rounded bg-[#eff6ff] border border-blue-200 animate-pulse"></div>
+              <div className="h-6 w-24 rounded bg-[#fff1f2] border border-rose-200 animate-pulse"></div>
+            </div>
+          </div>
+          {/* Skeleton Legend */}
+          <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[#f2ece1]">
+            <div className="h-4 w-16 bg-[#ede5d4] rounded animate-pulse"></div>
+            <div className="h-4 w-28 bg-[#ecfdf5] rounded animate-pulse"></div>
+            <div className="h-4 w-28 bg-[#fef2f2] rounded animate-pulse"></div>
+            <div className="h-4 w-28 bg-[#fffbeb] rounded animate-pulse"></div>
+          </div>
+        </div>
+
+        {/* Grid 4x4 Skeleton */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 relative z-0 items-stretch">
+          {/* Hàng 1: 4 Cung trên (Tỵ, Ngọ, Mùi, Thân) */}
+          {[5, 6, 7, 8].map((idx) => (
+            <div key={`skel-${idx}`} className="p-3 rounded-xl border-2 border-[#e8e2d5] bg-[#faf7f0] flex flex-col justify-between h-48 shimmer-card">
+              <div className="flex justify-between items-center pb-1.5 border-b border-[#eee8dc]">
+                <div className="h-3.5 w-14 bg-[#ede5d4] rounded-md shimmer-wave"></div>
+                <div className="h-3.5 w-10 bg-[#ede5d4] rounded-md shimmer-wave"></div>
+              </div>
+              <div className="my-auto space-y-2">
+                <div className="h-5 w-24 mx-auto bg-[#e5decfa] rounded shimmer-wave"></div>
+                <div className="h-4 w-20 mx-auto bg-[#fed7aa] rounded shimmer-wave"></div>
+                <div className="grid grid-cols-2 gap-1.5 pt-1">
+                  <div className="h-3 w-full bg-[#d1fae5] rounded shimmer-wave"></div>
+                  <div className="h-3 w-full bg-[#fee2e2] rounded shimmer-wave"></div>
+                </div>
+              </div>
+              <div className="flex justify-between items-center pt-1.5 border-t border-[#eee8dc]">
+                <div className="h-3 w-12 bg-[#ede5d4] rounded shimmer-wave"></div>
+                <div className="h-3 w-12 bg-[#ede5d4] rounded shimmer-wave"></div>
+              </div>
+            </div>
+          ))}
+
+          {/* Hàng 2: Thìn, TRUNG CUNG (col-span-2 row-span-2), Dậu */}
+          <div className="p-3 rounded-xl border-2 border-[#e8e2d5] bg-[#faf7f0] flex flex-col justify-between h-48 shimmer-card">
+            <div className="flex justify-between items-center pb-1.5 border-b border-[#eee8dc]">
+              <div className="h-3.5 w-14 bg-[#ede5d4] rounded-md shimmer-wave"></div>
+              <div className="h-3.5 w-10 bg-[#ede5d4] rounded-md shimmer-wave"></div>
+            </div>
+            <div className="my-auto space-y-2">
+              <div className="h-5 w-24 mx-auto bg-[#e5decfa] rounded shimmer-wave"></div>
+              <div className="h-4 w-20 mx-auto bg-[#fed7aa] rounded shimmer-wave"></div>
+              <div className="grid grid-cols-2 gap-1.5 pt-1">
+                <div className="h-3 w-full bg-[#d1fae5] rounded shimmer-wave"></div>
+                <div className="h-3 w-full bg-[#fee2e2] rounded shimmer-wave"></div>
+              </div>
+            </div>
+            <div className="flex justify-between items-center pt-1.5 border-t border-[#eee8dc]">
+              <div className="h-3 w-12 bg-[#ede5d4] rounded shimmer-wave"></div>
+              <div className="h-3 w-12 bg-[#ede5d4] rounded shimmer-wave"></div>
+            </div>
+          </div>
+
+          {/* TRUNG CUNG SKELETON (2x2) */}
+          <div className="md:col-span-2 md:row-span-2 rounded-2xl bg-[#faf7f0] border-2 border-[#ded6c7] p-5 flex flex-col justify-between text-center relative shadow-xs shimmer-card min-h-[380px]">
+            <div className="space-y-2">
+              <div className="h-3.5 w-40 mx-auto bg-[#fde68a] rounded-md shimmer-wave"></div>
+              <div className="h-7 w-52 mx-auto bg-[#ede5d4] rounded-lg shimmer-wave"></div>
+              <div className="h-5 w-64 mx-auto bg-[#eee7d8] rounded-full shimmer-wave"></div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-2.5 my-3 pt-3 border-t border-[#e5decfa]">
+              {[...Array(8)].map((_, i) => (
+                <div key={`tc-skel-${i}`} className="h-4 bg-[#ede5d4] rounded shimmer-wave"></div>
+              ))}
+              <div className="col-span-2 h-5 bg-[#f4eee1] rounded shimmer-wave"></div>
+            </div>
+
+            <div className="flex justify-between items-center pt-2 border-t border-[#e5decfa]">
+              <div className="h-4 w-28 bg-[#ede5d4] rounded shimmer-wave"></div>
+              <div className="h-3 w-36 bg-[#ede5d4] rounded shimmer-wave"></div>
+            </div>
+          </div>
+
+          {/* Dậu */}
+          <div className="p-3 rounded-xl border-2 border-[#e8e2d5] bg-[#faf7f0] flex flex-col justify-between h-48 shimmer-card">
+            <div className="flex justify-between items-center pb-1.5 border-b border-[#eee8dc]">
+              <div className="h-3.5 w-14 bg-[#ede5d4] rounded-md shimmer-wave"></div>
+              <div className="h-3.5 w-10 bg-[#ede5d4] rounded-md shimmer-wave"></div>
+            </div>
+            <div className="my-auto space-y-2">
+              <div className="h-5 w-24 mx-auto bg-[#e5decfa] rounded shimmer-wave"></div>
+              <div className="h-4 w-20 mx-auto bg-[#fed7aa] rounded shimmer-wave"></div>
+              <div className="grid grid-cols-2 gap-1.5 pt-1">
+                <div className="h-3 w-full bg-[#d1fae5] rounded shimmer-wave"></div>
+                <div className="h-3 w-full bg-[#fee2e2] rounded shimmer-wave"></div>
+              </div>
+            </div>
+            <div className="flex justify-between items-center pt-1.5 border-t border-[#eee8dc]">
+              <div className="h-3 w-12 bg-[#ede5d4] rounded shimmer-wave"></div>
+              <div className="h-3 w-12 bg-[#ede5d4] rounded shimmer-wave"></div>
+            </div>
+          </div>
+
+          {/* Hàng 3: Mão, Tuất */}
+          {[3, 10].map((idx) => (
+            <div key={`skel-${idx}`} className="p-3 rounded-xl border-2 border-[#e8e2d5] bg-[#faf7f0] flex flex-col justify-between h-48 shimmer-card">
+              <div className="flex justify-between items-center pb-1.5 border-b border-[#eee8dc]">
+                <div className="h-3.5 w-14 bg-[#ede5d4] rounded-md shimmer-wave"></div>
+                <div className="h-3.5 w-10 bg-[#ede5d4] rounded-md shimmer-wave"></div>
+              </div>
+              <div className="my-auto space-y-2">
+                <div className="h-5 w-24 mx-auto bg-[#e5decfa] rounded shimmer-wave"></div>
+                <div className="h-4 w-20 mx-auto bg-[#fed7aa] rounded shimmer-wave"></div>
+                <div className="grid grid-cols-2 gap-1.5 pt-1">
+                  <div className="h-3 w-full bg-[#d1fae5] rounded shimmer-wave"></div>
+                  <div className="h-3 w-full bg-[#fee2e2] rounded shimmer-wave"></div>
+                </div>
+              </div>
+              <div className="flex justify-between items-center pt-1.5 border-t border-[#eee8dc]">
+                <div className="h-3 w-12 bg-[#ede5d4] rounded shimmer-wave"></div>
+                <div className="h-3 w-12 bg-[#ede5d4] rounded shimmer-wave"></div>
+              </div>
+            </div>
+          ))}
+
+          {/* Hàng 4: Dần, Sửu, Tý, Hợi */}
+          {[2, 1, 0, 11].map((idx) => (
+            <div key={`skel-${idx}`} className="p-3 rounded-xl border-2 border-[#e8e2d5] bg-[#faf7f0] flex flex-col justify-between h-48 shimmer-card">
+              <div className="flex justify-between items-center pb-1.5 border-b border-[#eee8dc]">
+                <div className="h-3.5 w-14 bg-[#ede5d4] rounded-md shimmer-wave"></div>
+                <div className="h-3.5 w-10 bg-[#ede5d4] rounded-md shimmer-wave"></div>
+              </div>
+              <div className="my-auto space-y-2">
+                <div className="h-5 w-24 mx-auto bg-[#e5decfa] rounded shimmer-wave"></div>
+                <div className="h-4 w-20 mx-auto bg-[#fed7aa] rounded shimmer-wave"></div>
+                <div className="grid grid-cols-2 gap-1.5 pt-1">
+                  <div className="h-3 w-full bg-[#d1fae5] rounded shimmer-wave"></div>
+                  <div className="h-3 w-full bg-[#fee2e2] rounded shimmer-wave"></div>
+                </div>
+              </div>
+              <div className="flex justify-between items-center pt-1.5 border-t border-[#eee8dc]">
+                <div className="h-3 w-12 bg-[#ede5d4] rounded shimmer-wave"></div>
+                <div className="h-3 w-12 bg-[#ede5d4] rounded shimmer-wave"></div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
   const { info, cungList } = chartData;
   const [hoveredCungIdx, setHoveredCungIdx] = useState(null);
   

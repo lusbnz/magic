@@ -211,13 +211,6 @@ export default function InputForm({
             </button>
           </div>
         </form>
-
-        <div className="mt-5 pt-4 border-t border-[#f0ece1] flex items-center justify-between text-xs text-[#8c7f6e]">
-          <span className="flex items-center gap-1">
-            <ShieldCheck className="w-3.5 h-3.5 text-[#059669]" /> An toàn & Bảo mật
-          </span>
-          <span>Thuật toán Tử Vi Đẩu Số truyền thống</span>
-        </div>
       </div>
     </div>
   );

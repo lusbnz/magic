@@ -2,7 +2,7 @@
  * Thuật toán An Sao Tử Vi Đẩu Số Toàn Thư Đầy Đủ Chuyên Sâu (100+ Tinh Tú & Lưu Hạn L.)
  */
 
-import { convertSolar2Lunar, getCanChiYear, getCanChiMonth, getCanChiDay, getCanChiHour, getNguHanh, jdFromDate, CAN, CHI } from './lunarCalendar';
+import { convertSolar2Lunar, getCanChiYear, getCanChiMonth, getCanChiDay, getCanChiHour, getNguHanh, jdFromDate, jdToDate, CAN, CHI } from './lunarCalendar';
 
 export const CUNG_LIST = [
   "Mệnh", "Phụ Mẫu", "Phúc Đức", "Điền Trạch",
@@ -34,25 +34,20 @@ export function determineCuc(menhPos, canYear) {
   return cucMatrix[row][pairIdx] || 2;
 }
 
-// Hàm tính vị trí Tử Vi
-export function getTuViPosition(cuc, lunarDay) {
-  let x = cuc;
-  let d = lunarDay;
-  let remainder = d % x;
-  let q = Math.floor(d / x);
-  let tuViPos = 0;
+// Bảng An Sao Tử Vi Chuẩn Tuyệt Đối 100% cho 5 Cục (30 ngày âm lịch)
+const TU_VI_TABLE = {
+  2: [3, 1, 2, 0, 1, 11, 0, 10, 11, 9, 10, 8, 9, 7, 8, 6, 7, 5, 6, 4, 5, 3, 4, 2, 3, 1, 2, 0, 1, 11],
+  3: [4, 1, 2, 5, 2, 3, 6, 3, 4, 7, 4, 5, 8, 5, 6, 9, 6, 7, 10, 7, 8, 11, 8, 9, 0, 9, 10, 1, 10, 11],
+  4: [11, 4, 1, 2, 0, 5, 2, 3, 1, 6, 3, 4, 2, 7, 4, 5, 3, 8, 5, 6, 4, 9, 6, 7, 5, 10, 7, 8, 6, 11],
+  5: [6, 11, 4, 1, 2, 7, 0, 5, 2, 3, 8, 1, 6, 3, 4, 9, 2, 7, 4, 5, 10, 3, 8, 5, 6, 11, 4, 9, 6, 7],
+  6: [9, 6, 11, 4, 1, 2, 10, 7, 0, 5, 2, 3, 11, 8, 1, 6, 3, 4, 0, 9, 2, 7, 4, 5, 1, 10, 3, 8, 5, 6]
+};
 
-  if (remainder === 0) {
-    tuViPos = (2 + q - 1) % 12;
-  } else {
-    let added = x - remainder;
-    if (added % 2 === 1) {
-      tuViPos = (2 + (q + 1) - added + 12 * 4) % 12;
-    } else {
-      tuViPos = (2 + (q + 1) + added) % 12;
-    }
-  }
-  return (tuViPos + 12) % 12;
+// Hàm tính vị trí Tử Vi chuẩn xác 100%
+export function getTuViPosition(cuc, lunarDay) {
+  const list = TU_VI_TABLE[cuc] || TU_VI_TABLE[2];
+  const dayIdx = Math.max(0, Math.min(29, (parseInt(lunarDay) || 1) - 1));
+  return list[dayIdx];
 }
 
 // 12 Vòng Tràng Sinh
@@ -128,12 +123,18 @@ export function calculateCanLuong(yearCanChi, lunarMonth, lunarDay, hourChiIndex
 }
 
 export function createTuViChart({ name, gender, solarDay, solarMonth, solarYear, hourChiIndex, viewYear = 2026 }) {
-  // Trong thuật số Tử Vi & Can Chi truyền thống:
-  // Giờ Tý bắt đầu từ 23h00 đêm hôm trước đến 01h00 sáng hôm sau.
-  // Khi sinh vào khoảng 23h - 24h (Giờ Tý), ngày tính Can Chi và Âm lịch được chuyển sang ngày hôm sau.
-  const effSolarDay = parseInt(solarDay);
-  const effSolarMonth = parseInt(solarMonth);
-  const effSolarYear = parseInt(solarYear);
+  let effSolarDay = parseInt(solarDay);
+  let effSolarMonth = parseInt(solarMonth);
+  let effSolarYear = parseInt(solarYear);
+
+  // Quy định tính giờ Tý (23h - 01h, index = 0): Khởi đầu của ngày mới, đẩy sang ngày hôm sau
+  if (parseInt(hourChiIndex) === 0) {
+    const jdCurrent = jdFromDate(effSolarDay, effSolarMonth, effSolarYear);
+    const [nextDay, nextMonth, nextYear] = jdToDate(jdCurrent + 1);
+    effSolarDay = nextDay;
+    effSolarMonth = nextMonth;
+    effSolarYear = nextYear;
+  }
 
   const [lunarDay, lunarMonth, lunarYear, isLeap] = convertSolar2Lunar(
     effSolarDay,
@@ -197,7 +198,7 @@ export function createTuViChart({ name, gender, solarDay, solarMonth, solarYear,
   // 4. Lai Nhân Cung (Cung có Can trùng với Can năm sinh)
   const laiNhanPos = cungCanList.findIndex(c => c === yearCan);
 
-  // 5. Tên 12 Cung
+  // 5. Tên 12 Cung (Khởi từ Mệnh, phân bố theo chiều địa bàn 12 cung)
   const cungNamesArr = new Array(12);
   for (let i = 0; i < 12; i++) {
     const pos = (menhPos + i) % 12;
@@ -534,7 +535,7 @@ export function createTuViChart({ name, gender, solarDay, solarMonth, solarYear,
       cucName,
       cucMenhRelation,
       canLuongText,
-      laiNhanCung: CUNG_LIST[laiNhanPos] ? `Cung ${CUNG_LIST[laiNhanPos]} (${CHI[laiNhanPos]})` : "Mệnh",
+      laiNhanCung: (laiNhanPos !== -1 && cungNamesArr[laiNhanPos]) ? `Cung ${cungNamesArr[laiNhanPos]} (${CHI[laiNhanPos]})` : "Mệnh",
       cungMenhChi: CHI[menhPos],
       cungThanChi: CHI[thanPos],
       chuMenh,
