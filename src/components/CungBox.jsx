@@ -66,10 +66,10 @@ export default function CungBox({
       onClick={onClick}
       onMouseEnter={onMouseEnter}
       onMouseLeave={onMouseLeave}
-      className={`p-3 rounded-xl cursor-pointer transition-all duration-150 flex flex-col justify-between select-none relative hover:z-30 w-full h-full text-[#241e17] ${borderBgClass}`}
+      className={`p-2 sm:p-2.5 rounded-xl cursor-pointer transition-all duration-150 flex flex-col justify-between select-none relative hover:z-30 w-full h-full text-[#241e17] ${borderBgClass}`}
     >
       {/* 1. THANH TRÊN CÙNG: 4 Góc Thông Số (Can Chi Cung + Ngũ Hành | Tuổi Đại Hạn + Tiểu Hạn Tháng) */}
-      <div className="flex items-center justify-between border-b border-[#eee8dc] pb-1 mb-1.5 text-[11px]">
+      <div className="flex items-center justify-between border-b border-[#eee8dc] pb-0.5 mb-1 text-[10px] sm:text-[10.5px]">
         {/* Góc trên trái: Can Chi Cung & Ngũ Hành (Có popover giải nghĩa) */}
         <div 
           className="flex items-center gap-1 font-mono relative cursor-help"
@@ -77,7 +77,7 @@ export default function CungBox({
           onMouseLeave={() => setHoveredCanChiCung(false)}
         >
           <span className="font-extrabold text-[#786d5e] hover:text-[#c48b4d]">{cungCanChi || chi}</span>
-          <span className="text-[10px] text-[#a89f91] font-medium">{cungElement}</span>
+          <span className="text-[9px] text-[#a89f91] font-medium">{cungElement}</span>
 
           {hoveredCanChiCung && (
             <div 
@@ -150,15 +150,15 @@ export default function CungBox({
       </div>
 
       {/* 2. HEADER TÊN CUNG & CÁC HUY HIỆU (TUẦN / TRIỆT / MỆNH / THÂN) */}
-      <div className="flex items-center justify-between pb-1 mb-1.5 gap-1 relative">
-        <div className="flex items-center gap-1.5 relative flex-nowrap min-w-0">
+      <div className="flex items-center justify-between pb-0.5 mb-1 gap-1 relative">
+        <div className="flex items-center gap-1 relative flex-nowrap min-w-0">
           {/* Tên Cung */}
           <div
             className="flex items-center gap-1 relative cursor-help"
             onMouseEnter={() => setHoveredCung(true)}
             onMouseLeave={() => setHoveredCung(false)}
           >
-            <span className="text-[14.5px] sm:text-[15.5px] font-black text-[#1a1510] tracking-tight hover:text-[#c48b4d] transition-colors whitespace-nowrap leading-none uppercase">
+            <span className="text-[13.5px] sm:text-[14.5px] font-black text-[#1a1510] tracking-tight hover:text-[#c48b4d] transition-colors whitespace-nowrap leading-none uppercase">
               {cungTen}
             </span>
 
@@ -185,7 +185,7 @@ export default function CungBox({
               onMouseEnter={() => setHoveredTriệt(true)}
               onMouseLeave={() => setHoveredTriệt(false)}
             >
-              <span className="h-5 px-1.5 inline-flex items-center justify-center rounded bg-[#1e293b] hover:bg-[#0f172a] text-white text-[9px] font-black tracking-wider whitespace-nowrap leading-none">
+              <span className="h-4 px-1 inline-flex items-center justify-center rounded bg-[#1e293b] hover:bg-[#0f172a] text-white text-[8.5px] font-black tracking-wider whitespace-nowrap leading-none">
                 TRIỆT
               </span>
 
@@ -198,8 +198,8 @@ export default function CungBox({
                     <Lock className="w-3.5 h-3.5" /> Triệt Không (Triệt Lộ Không Vong)
                   </div>
                   <p className="text-[11px] leading-relaxed text-[#f1f5f9] break-words">
-                    • <strong>Tác dụng:</strong> Ngăn chặn, làm đảo ngược tính chất của sao đóng tại cung này (Sao tốt giảm tốt, sao xấu giảm xấu).<br/>
-                    • <strong>Thời gian:</strong> Tác động mạnh mẽ nhất từ thuở thiếu thời đến trước 30 tuổi (Tiền vận).
+                    • <strong>Tác dụng:</strong> Ngăn chặn, làm đảo ngược tính chất của sao đóng tại cung này.<br/>
+                    • <strong>Thời gian:</strong> Tác động mạnh nhất từ thiếu thời đến trước 30 tuổi (Tiền vận).
                   </p>
                 </div>
               )}
@@ -213,7 +213,7 @@ export default function CungBox({
               onMouseEnter={() => setHoveredTuần(true)}
               onMouseLeave={() => setHoveredTuần(false)}
             >
-              <span className="h-5 px-1.5 inline-flex items-center justify-center rounded bg-[#475569] hover:bg-[#334155] text-amber-200 text-[9px] font-black tracking-wider whitespace-nowrap leading-none">
+              <span className="h-4 px-1 inline-flex items-center justify-center rounded bg-[#475569] hover:bg-[#334155] text-amber-200 text-[8.5px] font-black tracking-wider whitespace-nowrap leading-none">
                 TUẦN
               </span>
 
@@ -223,11 +223,11 @@ export default function CungBox({
                   style={{ zIndex: 100 }}
                 >
                   <div className="font-bold text-[#fde047] mb-1 text-[12px] flex items-center gap-1">
-                    <ShieldAlert className="w-3.5 h-3.5" /> Tuần Không (Tuần Trung Không Vong)
+                    <Lock className="w-3.5 h-3.5" /> Tuần Không (Tuần Trung Không Vong)
                   </div>
                   <p className="text-[11px] leading-relaxed text-[#f1f5f9] break-words">
-                    • <strong>Tác dụng:</strong> Bao bọc, làm dịu và làm chậm lại các biến cố trong cung.<br/>
-                    • <strong>Thời gian:</strong> Tác động bền bỉ, êm dịu kéo dài suốt cả cuộc đời, càng về hậu vận (sau 30 tuổi) càng rõ nét.
+                    • <strong>Tác dụng:</strong> Bao bọc, làm bình ổn và chi phối đều đặn vận trình.<br/>
+                    • <strong>Thời gian:</strong> Tác động từ sau 30 tuổi trở đi đến suốt đời (Hậu vận).
                   </p>
                 </div>
               )}
@@ -243,7 +243,7 @@ export default function CungBox({
               onMouseEnter={() => setHoveredMenh(true)}
               onMouseLeave={() => setHoveredMenh(false)}
             >
-              <span className="h-5 px-1.5 inline-flex items-center justify-center rounded bg-[#fee2e2] text-[#b91c1c] border border-[#fca5a5] text-[9.5px] font-black whitespace-nowrap leading-none">
+              <span className="h-4 px-1 inline-flex items-center justify-center rounded bg-[#fee2e2] text-[#991b1b] border border-[#fca5a5] text-[8.5px] font-black whitespace-nowrap leading-none">
                 MỆNH
               </span>
               {hoveredMenh && (
@@ -268,7 +268,7 @@ export default function CungBox({
               onMouseEnter={() => setHoveredThan(true)}
               onMouseLeave={() => setHoveredThan(false)}
             >
-              <span className="h-5 px-1.5 inline-flex items-center justify-center rounded bg-[#f3e8ff] text-[#6b21a8] border border-[#d8b4fe] text-[9.5px] font-black whitespace-nowrap leading-none">
+              <span className="h-4 px-1 inline-flex items-center justify-center rounded bg-[#f3e8ff] text-[#6b21a8] border border-[#d8b4fe] text-[8.5px] font-black whitespace-nowrap leading-none">
                 THÂN
               </span>
               {hoveredThan && (
@@ -290,7 +290,7 @@ export default function CungBox({
       </div>
 
       {/* 3. DANH SÁCH 14 CHÍNH TINH */}
-      <div className="space-y-1 mb-2">
+      <div className="space-y-0.5 mb-1">
         {safeChinhTinh.length > 0 ? (
           <div className="flex flex-wrap gap-1">
             {safeChinhTinh.map((star, idx) => {
@@ -304,10 +304,10 @@ export default function CungBox({
                   onMouseEnter={() => setHoveredStar(star.name)}
                   onMouseLeave={() => setHoveredStar(null)}
                 >
-                  <span className="text-xs font-black px-2 py-0.5 rounded-md bg-[#ffedd5] text-[#9a3412] border border-[#fed7aa] flex items-center gap-1 hover:bg-[#fed7aa] transition-colors">
+                  <span className="text-[11px] sm:text-[11.5px] font-black px-1.5 py-0.2 rounded-md bg-[#ffedd5] text-[#9a3412] border border-[#fed7aa] flex items-center gap-0.5 hover:bg-[#fed7aa] transition-colors leading-snug">
                     <span>{star.name}</span>
                     {star.dacTinh && (
-                      <span className="text-[10px] text-[#ea580c] font-bold">({star.dacTinh})</span>
+                      <span className="text-[9.5px] text-[#ea580c] font-bold">({star.dacTinh})</span>
                     )}
                   </span>
 
@@ -353,7 +353,7 @@ export default function CungBox({
             })}
           </div>
         ) : (
-          <span className="text-[11.5px] text-[#8c7f6e] italic block py-0.5">Vô chính diệu (Không có chính tinh)</span>
+          <span className="text-[10.5px] text-[#8c7f6e] italic block py-0.2">Vô chính diệu (Không có chính tinh)</span>
         )}
       </div>
 

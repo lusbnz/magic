@@ -7,51 +7,71 @@ import {
   Heart, 
   ShieldAlert, 
   BookOpen,
-  Bot
+  Bot,
+  PanelRightClose,
+  ChevronRight
 } from 'lucide-react';
 
-export default function AiAnalysisView({ analysisText, selectedCung, isLoading = false }) {
-  // Phân loại icon và nhãn tương ứng cho 5 mục luận giải
-  const getSectionMeta = (idx) => {
-    const metas = [
-      {
+export default function AiAnalysisView({ analysisText, selectedCung, isLoading = false, onClose }) {
+  // Phân loại icon và nhãn tương ứng theo nội dung tiêu đề (khắc phục hoàn toàn lỗi lệch chỉ số/mất thông tin)
+  const getSectionMetaByText = (headerText, fallbackIdx) => {
+    const textUpper = (headerText || '').toUpperCase();
+    
+    if (textUpper.includes('TỔNG QUAN') || textUpper.includes('BẢN MỆNH') || /^[#\s*•]*1[\s.]/.test(headerText || '')) {
+      return {
         id: 'menh',
         label: 'Tổng Quan',
         icon: Compass,
         color: 'text-amber-700 bg-amber-50 border-amber-200',
         badge: 'Cốt Cách & Bản Mệnh'
-      },
-      {
+      };
+    }
+    if (textUpper.includes('SỰ NGHIỆP') || textUpper.includes('CÔNG DANH') || textUpper.includes('QUAN LỘC') || /^[#\s*•]*2[\s.]/.test(headerText || '')) {
+      return {
         id: 'quan',
         label: 'Sự Nghiệp',
         icon: Briefcase,
         color: 'text-blue-700 bg-blue-50 border-blue-200',
         badge: 'Công Danh & Địa Vị'
-      },
-      {
+      };
+    }
+    if (textUpper.includes('TÀI LỘC') || textUpper.includes('TÀI BẠCH') || textUpper.includes('ĐIỀN SẢN') || /^[#\s*•]*3[\s.]/.test(headerText || '')) {
+      return {
         id: 'tai',
         label: 'Tài Lộc',
         icon: Coins,
         color: 'text-emerald-700 bg-emerald-50 border-emerald-200',
         badge: 'Tiền Tài & Điền Sản'
-      },
-      {
+      };
+    }
+    if (textUpper.includes('TÌNH DUYÊN') || textUpper.includes('GIA ĐẠO') || textUpper.includes('PHU THÊ') || /^[#\s*•]*4[\s.]/.test(headerText || '')) {
+      return {
         id: 'the',
         label: 'Tình Duyên',
         icon: Heart,
         color: 'text-rose-700 bg-rose-50 border-rose-200',
         badge: 'Gia Đạo & Duyên Nợ'
-      },
-      {
+      };
+    }
+    if (textUpper.includes('VẬN HẠN') || textUpper.includes('HÓA GIẢI') || textUpper.includes('LỜI KHUYÊN') || /^[#\s*•]*5[\s.]/.test(headerText || '')) {
+      return {
         id: 'han',
         label: 'Vận Hạn',
         icon: ShieldAlert,
         color: 'text-purple-700 bg-purple-50 border-purple-200',
         badge: 'Lời Khuyên Hóa Giải'
-      }
+      };
+    }
+
+    const metas = [
+      { id: 'menh', label: 'Tổng Quan', icon: Compass, color: 'text-amber-700 bg-amber-50 border-amber-200', badge: 'Cốt Cách & Bản Mệnh' },
+      { id: 'quan', label: 'Sự Nghiệp', icon: Briefcase, color: 'text-blue-700 bg-blue-50 border-blue-200', badge: 'Công Danh & Địa Vị' },
+      { id: 'tai', label: 'Tài Lộc', icon: Coins, color: 'text-emerald-700 bg-emerald-50 border-emerald-200', badge: 'Tiền Tài & Điền Sản' },
+      { id: 'the', label: 'Tình Duyên', icon: Heart, color: 'text-rose-700 bg-rose-50 border-rose-200', badge: 'Gia Đạo & Duyên Nợ' },
+      { id: 'han', label: 'Vận Hạn', icon: ShieldAlert, color: 'text-purple-700 bg-purple-50 border-purple-200', badge: 'Lời Khuyên Hóa Giải' }
     ];
-    return metas[idx] || {
-      id: `sec-${idx}`,
+    return metas[fallbackIdx] || {
+      id: `sec-${fallbackIdx}`,
       label: 'Luận Giải',
       icon: BookOpen,
       color: 'text-slate-700 bg-slate-50 border-slate-200',
@@ -59,8 +79,8 @@ export default function AiAnalysisView({ analysisText, selectedCung, isLoading =
     };
   };
 
-  // 1. Shimmer Loading State khi AI đang suy luận và phân tích
-  if (isLoading || !analysisText) {
+  // 1. Shimmer Loading State khi AI chưa trả về ký tự nào
+  if (isLoading && !analysisText) {
     const skeletonSections = [
       { label: 'Tổng Quan', badge: 'Cốt Cách & Bản Mệnh', icon: Compass, color: 'text-amber-700 bg-amber-50 border-amber-200' },
       { label: 'Sự Nghiệp', badge: 'Công Danh & Địa Vị', icon: Briefcase, color: 'text-blue-700 bg-blue-50 border-blue-200' },
@@ -70,7 +90,7 @@ export default function AiAnalysisView({ analysisText, selectedCung, isLoading =
     ];
 
     return (
-      <div className="warm-card p-4 sm:p-5 flex flex-col h-full sticky top-20 shadow-sm">
+      <div className="warm-card p-4 sm:p-5 flex flex-col h-full sticky top-20 shadow-sm animate-in slide-in-from-right-4 duration-200">
         {/* Header Loading */}
         <div className="flex items-center justify-between border-b border-[#eee8dc] pb-3 mb-3.5">
           <div className="flex items-center gap-2.5">
@@ -93,10 +113,15 @@ export default function AiAnalysisView({ analysisText, selectedCung, isLoading =
             </div>
           </div>
 
-          {selectedCung && (
-            <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-[#f5f1e8] text-[#c48b4d] border border-[#ded6c7]">
-              Cung {selectedCung.cungTen}
-            </span>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg text-[#786d5e] hover:text-[#2d261e] hover:bg-[#ede7da] transition-colors border border-[#e8e2d5] cursor-pointer flex items-center gap-1 text-xs"
+              title="Thu gọn bảng luận giải sang phải"
+            >
+              <PanelRightClose className="w-4 h-4" />
+              <span className="hidden sm:inline">Thu gọn</span>
+            </button>
           )}
         </div>
 
@@ -151,39 +176,80 @@ export default function AiAnalysisView({ analysisText, selectedCung, isLoading =
     );
   }
 
-  // 2. Nội dung luận giải hoàn chỉnh khi model đã trả ra data
-  const sections = analysisText.split('###').filter(Boolean).map((sec, idx) => {
-    const lines = sec.trim().split('\n');
-    const title = lines[0].replace(/^[\d.\s🌟💼💰❤️🔮]+/, '').trim();
-    const rawTitle = lines[0].trim();
-    const content = lines.slice(1).join('\n');
-    const meta = getSectionMeta(idx);
-    return { idx, rawTitle, title, content, meta };
-  });
+  // 2. Nội dung luận giải hoàn chỉnh / đang stream real-time
+  const rawSections = (analysisText || '').split(/###\s*/).filter(Boolean);
+  const sections = [];
+
+  for (let i = 0; i < rawSections.length; i++) {
+    const sec = rawSections[i].trim();
+    if (!sec) continue;
+
+    const lines = sec.split('\n');
+    const headerLine = lines[0].trim();
+    const content = lines.slice(1).join('\n').trim();
+
+    // Bỏ qua các đoạn dẫn nhập rác
+    if (!content && (headerLine === '--' || headerLine === '---' || headerLine.length > 80 || headerLine.startsWith('Dưới đây') || headerLine.startsWith('Chào bạn'))) {
+      continue;
+    }
+    if (sections.length === 0 && !/^[1-5\s*•🌟💼💰❤️🔮]+|[A-ZÀ-Ỹ\s]{3,}:/.test(headerLine) && !headerLine.toUpperCase().includes('TỔNG QUAN')) {
+      continue;
+    }
+
+    const title = headerLine.replace(/^[\d.\s🌟💼💰❤️🔮]+/, '').trim();
+    const meta = getSectionMetaByText(headerLine, sections.length);
+
+    sections.push({
+      idx: sections.length,
+      rawTitle: headerLine,
+      title: title || meta.label,
+      content: content || headerLine,
+      meta
+    });
+  }
 
   return (
-    <div className="warm-card p-4 sm:p-5 flex flex-col h-full sticky top-20 shadow-sm transition-all duration-300">
+    <div className="warm-card p-4 sm:p-5 flex flex-col h-full sticky top-20 shadow-sm transition-all duration-300 animate-in slide-in-from-right-4">
       {/* Header Sidebar */}
       <div className="flex items-center justify-between border-b border-[#eee8dc] pb-3 mb-3.5">
         <div className="flex items-center gap-2.5">
           <div className="w-8 h-8 rounded-xl bg-[#fef7ee] border border-[#fbd38d] flex items-center justify-center text-[#c48b4d] shadow-2xs">
-            <Sparkles className="w-4 h-4" />
+            <Sparkles className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} style={{ animationDuration: '3s' }} />
           </div>
           <div>
-            <h3 className="text-sm sm:text-base font-black text-[#241e17] tracking-tight">
-              Luận Giải Chi Tiết AI
-            </h3>
+            <div className="flex items-center gap-1.5">
+              <h3 className="text-sm sm:text-base font-black text-[#241e17] tracking-tight">
+                Luận Giải Chi Tiết AI
+              </h3>
+              {isLoading && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#fef7ee] text-[#c48b4d] border border-[#fbd38d] animate-pulse">
+                  Đang viết...
+                </span>
+              )}
+            </div>
             <p className="text-[11px] text-[#786d5e]">
               Phân tích vận trình & lời khuyên cổ truyền
             </p>
           </div>
         </div>
 
-        {selectedCung && (
-          <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-[#f5f1e8] text-[#c48b4d] border border-[#ded6c7]">
-            Cung {selectedCung.cungTen}
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {selectedCung && (
+            <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-[#f5f1e8] text-[#c48b4d] border border-[#ded6c7] hidden sm:inline-block">
+              Cung {selectedCung.cungTen}
+            </span>
+          )}
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-lg text-[#786d5e] hover:text-[#2d261e] hover:bg-[#ede7da] transition-colors border border-[#e8e2d5] cursor-pointer flex items-center gap-1 text-xs"
+              title="Thu gọn bảng luận giải sang phải"
+            >
+              <PanelRightClose className="w-4 h-4" />
+              <span className="hidden sm:inline">Thu gọn</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Toàn bộ danh sách Luận Giải liền mạch dạng cuộn độc lập */}

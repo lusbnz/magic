@@ -6,55 +6,39 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 // Danh sách các model AI thế hệ mới theo thứ tự ưu tiên
 const CANDIDATE_MODELS = [
   "gemini-3.6-flash",
-  "gemini-3.5-flash",
-  "gemini-3.7-flash"
+  "gemini-3.7-flash",
+  "gemini-3.5-flash"
 ];
 
-export async function analyzeTuViWithAI(chartData, apiKey = "") {
+export async function analyzeTuViWithAI(chartData, apiKey = "", onStreamChunk = null) {
   const key = (apiKey || "").trim();
   
   if (key.length > 10) {
     const prompt = `
-Bạn là một bậc thầy uyên bác về Huyền Học Đông Phương và Tử Vi Đẩu Số với hơn 30 năm kinh nghiệm nghiên cứu cổ thư (Tử Vi Đẩu Số Toàn Thư).
-Hãy luận giải chi tiết, sâu sắc và chuẩn xác cho lá số Tử Vi sau:
+Bạn là bậc thầy Tử Vi Đẩu Số Toàn Thư. Hãy viết ngay bản luận giải chuyên sâu theo đúng 5 mục (bắt đầu ngay từ mục 1, tuyệt đối không viết lời chào hỏi hay dẫn nhập ban đầu):
+ĐƯƠNG SỐ: ${chartData.info.name} (${chartData.info.gender}, ${chartData.info.amDuongGender})
+Sinh: ${chartData.info.solarDate} (ÂL: ${chartData.info.lunarDate}), Giờ ${chartData.info.canChiHour}, Ngày ${chartData.info.canChiDay}, Năm ${chartData.info.canChiYear} (${chartData.info.nguHanh}, ${chartData.info.cucName})
+Mệnh tại ${chartData.info.cungMenhChi}, Thân cư ${chartData.info.cungThanChi}, Chủ Mệnh: ${chartData.info.chuMenh}, Chủ Thân: ${chartData.info.chuThan}
+Năm xem hạn: ${chartData.info.viewYearCanChi || chartData.info.viewYear}
 
-THÔNG TIN ĐƯƠNG SỐ:
-- Họ và tên: ${chartData.info.name}
-- Giới tính: ${chartData.info.gender} (${chartData.info.amDuongGender})
-- Ngày sinh Dương Lịch: ${chartData.info.solarDate}
-- Ngày sinh Âm Lịch: ${chartData.info.lunarDate}
-- Can Chi Bát Tự: Năm ${chartData.info.canChiYear} | Tháng ${chartData.info.canChiMonth} | Ngày ${chartData.info.canChiDay} | Giờ ${chartData.info.canChiHour}
-- Bản Mệnh: ${chartData.info.nguHanh}
-- Cục: ${chartData.info.cucName} ${chartData.info.cucMenhRelation}
-- Cung Mệnh tại: ${chartData.info.cungMenhChi}
-- Cung Thân cư: ${chartData.info.cungThanChi}
-- Chủ Mệnh: ${chartData.info.chuMenh} | Chủ Thân: ${chartData.info.chuThan}
-- Năm xem vận hạn: ${chartData.info.viewYear} (${chartData.info.viewYearCanChi})
+12 CUNG VỊ:
+${chartData.cungList.map(c => `- Cung ${c.cungTen} (${c.chi} - ${c.cungCanChi}): Chính tinh [${c.chinhTinh.map(s => `${s.name} (${s.dacTinh || ''})`).join(', ') || 'Vô chính diệu'}], Cát [${c.catTinh.map(s => s.name).join(', ')}], Hung [${c.hungTinh.map(s => s.name).join(', ')}], Lưu [${c.luuTinh.map(s => s.name).join(', ')}]`).join('\n')}
 
-CHI TIẾT 12 CUNG VỊ:
-${chartData.cungList.map(c => `- Cung ${c.cungTen} (tại ${c.chi} - ${c.cungCanChi}): Chính tinh [${c.chinhTinh.map(s => `${s.name} (${s.dacTinh || ''})`).join(', ') || 'Vô chính diệu'}], Cát tinh [${c.catTinh.map(s => s.name).join(', ')}], Hung sát tinh [${c.hungTinh.map(s => s.name).join(', ')}], Lưu tinh [${c.luuTinh.map(s => s.name).join(', ')}]`).join('\n')}
-
-HÃY ĐƯA RA BẢN LUẬN GIẢI ĐẦY ĐỦ, CHUẨN XÁC, DÙNG VĂN PHONG TRẦM ẤM, TRIẾT LÝ VÀ CHUYÊN SÂU THEO CÁC MỤC DƯỚI ĐÂY (định dạng Markdown):
+BẮT ĐẦU NGAY VỚI 5 MỤC DƯỚI ĐÂY:
 ### 1. 🌟 TỔNG QUAN BẢN MỆNH & TÍNH CÁCH
-- Luận giải tương quan Mệnh (${chartData.info.nguHanh}) và Cục (${chartData.info.cucName}).
-- Tính cách cốt lõi, ưu điểm, nhược điểm nổi bật từ cách cục Cung Mệnh & Cung Thân.
+- Tương quan Mệnh (${chartData.info.nguHanh}) & Cục (${chartData.info.cucName}), tính cách cốt lõi từ Cung Mệnh & Thân.
 
-### 2. 💼 SỰ NGHIỆP, CÔNG DANH & ĐỊA VỊ (CUNG QUAN LỘC)
-- Phân tích các sao thủ cung Quan Lộc.
-- Ngành nghề, lĩnh vực phù hợp nhất để phát huy tiềm năng tối đa.
-- Lộ trình thăng tiến và thử thách trên con đường lập thân.
+### 2. 💼 SỰ NGHIỆP & CÔNG DANH (CUNG QUAN LỘC)
+- Phân tích sao thủ cung Quan Lộc, ngành nghề phát huy tối đa tiềm năng và vận thế thăng tiến.
 
-### 3. 💰 TÀI BẠCH, TIỀN TÀI & ĐẦU TƯ (CUNG TÀI BẠCH - ĐIỀN TRẠCH)
-- Phân tích nguồn tài lộc, con đường tụ tài hay tán tài.
-- Vận số nhà đất, điền sản và lời khuyên tích lũy tài chính.
+### 3. 💰 TÀI LỘC & ĐIỀN SẢN (CUNG TÀI BẠCH - ĐIỀN TRẠCH)
+- Nguồn tụ tài, cơ hội tích lũy tài chính và vận số nhà đất, điền sản.
 
-### 4. ❤️ TÌNH DUYÊN, GIA ĐẠO & CON CÁI (CUNG PHU THÊ - TỬ TỨC)
-- Đặc điểm người bạn đời tương lai, duyên nợ vợ chồng và lời khuyên hòa hợp gia đạo.
-- Hậu vận đường con cái.
+### 4. ❤️ TÌNH DUYÊN & GIA ĐẠO (CUNG PHU THÊ - TỬ TỨC)
+- Duyên nợ bạn đời, bí quyết hòa hợp gia đạo và hậu vận con cái.
 
 ### 5. 🔮 VẬN HẠN NĂM ${chartData.info.viewYear} & LỜI KHUYÊN HÓA GIẢI
-- Phân tích lưu niên, sao lưu chiếu vào các cung trong năm ${chartData.info.viewYear}.
-- Lời khuyên tu dưỡng, phong thủy hóa giải và kích hoạt phước báu.
+- Phân tích sao lưu chiếu năm ${chartData.info.viewYear}, lời khuyên tu tâm dưỡng tính và tích phước cải vận.
 `;
 
     const genAI = new GoogleGenerativeAI(key);
@@ -62,11 +46,28 @@ HÃY ĐƯA RA BẢN LUẬN GIẢI ĐẦY ĐỦ, CHUẨN XÁC, DÙNG VĂN PHONG T
     for (const modelName of CANDIDATE_MODELS) {
       try {
         const model = genAI.getGenerativeModel({ model: modelName });
-        const result = await model.generateContent(prompt);
-        const response = await result.response;
-        const text = response.text();
-        if (text && text.length > 50) {
-          return text;
+        
+        // Sử dụng Streaming Response để chữ xuất hiện liên tục ngay lập tức
+        if (typeof onStreamChunk === 'function') {
+          const resultStream = await model.generateContentStream(prompt);
+          let accumulated = "";
+          for await (const chunk of resultStream.stream) {
+            const chunkText = chunk.text();
+            if (chunkText) {
+              accumulated += chunkText;
+              onStreamChunk(accumulated);
+            }
+          }
+          if (accumulated && accumulated.length > 50) {
+            return accumulated;
+          }
+        } else {
+          const result = await model.generateContent(prompt);
+          const response = await result.response;
+          const text = response.text();
+          if (text && text.length > 50) {
+            return text;
+          }
         }
       } catch (err) {
         console.warn(`Model ${modelName} failed, trying next candidate:`, err?.message || err);

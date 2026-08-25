@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, RefreshCw, Compass, History } from 'lucide-react';
+import { Sparkles, RefreshCw, Compass, History, ChevronLeft, ChevronRight, PanelRightOpen, PanelRightClose, Bot } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 import InputForm from './components/InputForm';
@@ -27,6 +27,7 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [isBoardLoading, setIsBoardLoading] = useState(false);
   const [isAiLoading, setIsAiLoading] = useState(false);
+  const [isAiOpen, setIsAiOpen] = useState(false); // Mặc định thu gọn chiều ngang khi mới lập lá số
   const defaultKey = import.meta.env.VITE_GEMINI_API_KEY || (typeof window !== 'undefined' ? atob('QVEuQWI4Uk42SkI2Y3c4OTNsTGVHSUZVdk5DdEpITkZncTRGQWtZSUtucC15MmxQYWVTSUE=') : '');
   const [apiKey, setApiKey] = useState(defaultKey);
   const [selectedCungIndex, setSelectedCungIndex] = useState(null);
@@ -56,6 +57,7 @@ export default function App() {
     setLoading(true);
     setIsBoardLoading(true);
     setIsAiLoading(true);
+    setIsAiOpen(false); // Mặc định thu gọn chiều ngang để hiển thị rộng rãi Thiên Bàn
     setAnalysisText('');
 
     try {
@@ -85,8 +87,12 @@ export default function App() {
         colors: ['#c48b4d', '#f59e0b', '#d97706', '#fef3c7']
       });
 
-      // 3. Gọi AI luận giải (tiếp tục chạy song song với hiệu ứng Shimmer ở cột phải)
-      const aiResult = await analyzeTuViWithAI(chart, apiKey);
+      // 3. Gọi AI luận giải với Real-time Streaming (chữ xuất hiện liên tục ngay khi AI viết)
+      const aiResult = await analyzeTuViWithAI(chart, apiKey, (accumulatedText) => {
+        if (requestId === currentRequestIdRef.current) {
+          setAnalysisText(accumulatedText);
+        }
+      });
       if (requestId !== currentRequestIdRef.current) return;
       setAnalysisText(aiResult);
     } catch (err) {
@@ -109,6 +115,7 @@ export default function App() {
     setLoading(false);
     setIsBoardLoading(false);
     setIsAiLoading(false);
+    setIsAiOpen(false);
 
     const profileData = {
       name: profile.name,
@@ -157,35 +164,6 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-[#fcfbf9] text-[#2d261e] flex flex-col justify-between relative">
-      {/* Top Navigation Bar */}
-      <nav className="border-b border-[#e8e3d7] bg-[#ffffff]/90 backdrop-blur sticky top-0 z-40">
-        <div className="w-full px-4 sm:px-6 h-14 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#2d261e] flex items-center justify-center text-[#ffffff] font-bold text-sm shadow-sm">
-              <Compass className="w-4 h-4 text-[#facc15]" />
-            </div>
-            <span className="font-bold text-sm tracking-tight text-[#2d261e]">
-              Tử Vi <span className="text-xs font-normal text-[#8c7f6e]">/ Đẩu Số Tinh Hoa</span>
-            </span>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setIsHistoryOpen(true)}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#faf7f0] hover:bg-[#fef7ee] text-[#5e5343] hover:text-[#c48b4d] border border-[#e8e3d7] hover:border-[#fbd38d] text-xs font-semibold transition-all cursor-pointer shadow-2xs"
-            >
-              <History className="w-3.5 h-3.5 text-[#c48b4d]" />
-              <span className="hidden xs:inline">Hồ sơ đã xem</span>
-              {savedProfiles.length > 0 && (
-                <span className="w-4 h-4 rounded-full bg-[#c48b4d] text-white text-[10px] flex items-center justify-center font-bold">
-                  {savedProfiles.length}
-                </span>
-              )}
-            </button>
-          </div>
-        </div>
-      </nav>
-
       {/* History Sidebar */}
       <HistorySidebar
         isOpen={isHistoryOpen}
@@ -197,7 +175,7 @@ export default function App() {
       />
 
       {/* Main Container Full Width */}
-      <div className="w-full px-4 sm:px-6 py-6 sm:py-7 flex-1">
+      <div className={`w-full px-3 sm:px-5 ${chartData ? 'py-2 sm:py-3' : 'py-6 sm:py-7'} flex-1`}>
         {!chartData ? (
           <div>
             {/* Header intro */}
@@ -222,9 +200,9 @@ export default function App() {
             />
           </div>
         ) : (
-          <div className="space-y-5">
+          <div className="space-y-2.5">
             {/* Action Header bar */}
-            <div className="flex flex-wrap items-center justify-between gap-3 p-3.5 rounded-xl warm-card bg-[#ffffff]">
+            <div className="flex flex-wrap items-center justify-between gap-2 p-2 sm:p-2.5 rounded-xl warm-card bg-[#ffffff]">
               <div className="flex items-center gap-2">
                 <span className="text-xs text-[#8c7f6e]">Đương số:</span>
                 <span className="text-sm font-bold text-[#2d261e]">
@@ -237,6 +215,26 @@ export default function App() {
               </div>
 
               <div className="flex items-center gap-2">
+                {/* Nút Bật/Tắt Luận Giải AI */}
+                <button
+                  onClick={() => setIsAiOpen(!isAiOpen)}
+                  className={`text-xs font-semibold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all border cursor-pointer shadow-2xs ${
+                    isAiOpen 
+                      ? 'bg-[#2d261e] text-white border-[#2d261e]' 
+                      : 'bg-[#fef7ee] hover:bg-[#faedd9] text-[#c48b4d] border-[#fbd38d]'
+                  }`}
+                >
+                  <Sparkles className={`w-3.5 h-3.5 ${isAiLoading ? 'animate-spin' : 'text-[#facc15]'}`} />
+                  <span>{isAiOpen ? 'Đang Mở Luận Giải AI' : 'Mở Luận Giải AI'}</span>
+                  {isAiLoading ? (
+                    <span className="inline-block w-2 h-2 rounded-full bg-[#f59e0b] animate-ping ml-0.5" />
+                  ) : analysisText ? (
+                    <span className="inline-block w-2 h-2 rounded-full bg-[#10b981] ml-0.5" />
+                  ) : null}
+                </button>
+
+                <div className="h-4 w-[1px] bg-[#e8e3d7] hidden sm:block"></div>
+
                 <button
                   onClick={() => setIsHistoryOpen(true)}
                   className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-[#faf7f0] hover:bg-[#ede7da] text-[#5e5343] flex items-center gap-1.5 transition-colors border border-[#e8e3d7] cursor-pointer"
@@ -252,10 +250,10 @@ export default function App() {
               </div>
             </div>
 
-            {/* Layout 2 cột: Cột trái Bàn Lá Số 12 Cung, Cột phải Luận Giải Chi Tiết AI (Sidebar) */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-              {/* Cột trái (Bàn Lá Số chiếm 8/12 cột) */}
-              <div className="lg:col-span-8 space-y-6">
+            {/* Layout: Khi thu gọn chiều ngang (isAiOpen = false), Bàn lá số mở rộng 100% full width. Khi mở rộng, chia 8/12 và 4/12 */}
+            <div className={`grid grid-cols-1 ${isAiOpen ? 'lg:grid-cols-12' : 'lg:grid-cols-1'} gap-6 items-start transition-all duration-300`}>
+              {/* Cột Bàn Lá Số */}
+              <div className={`${isAiOpen ? 'lg:col-span-8' : 'w-full'} space-y-6 transition-all duration-300`}>
                 <TuViBoard
                   chartData={chartData}
                   selectedCungIndex={selectedCungIndex}
@@ -264,15 +262,38 @@ export default function App() {
                 />
               </div>
 
-              {/* Cột phải: Luận Giải Chi Tiết Của AI (Sidebar bám dính sticky, chiếm 4/12 cột) */}
-              <div className="lg:col-span-4">
-                <AiAnalysisView
-                  analysisText={analysisText}
-                  selectedCung={selectedCung}
-                  isLoading={isAiLoading}
-                />
-              </div>
+              {/* Cột Luận Giải Chi Tiết Của AI (Mở rộng / Thu gọn chiều ngang) */}
+              {isAiOpen && (
+                <div className="lg:col-span-4 transition-all duration-300">
+                  <AiAnalysisView
+                    analysisText={analysisText}
+                    selectedCung={selectedCung}
+                    isLoading={isAiLoading}
+                    onClose={() => setIsAiOpen(false)}
+                  />
+                </div>
+              )}
             </div>
+
+            {/* Nút Tab Nổi Cạnh Phải Màn Hình khi đang thu gọn chiều ngang */}
+            {!isAiOpen && (
+              <button
+                onClick={() => setIsAiOpen(true)}
+                className="fixed right-0 top-1/2 -translate-y-1/2 z-40 bg-[#2d261e] hover:bg-[#43392e] text-white py-3.5 px-2 rounded-l-2xl shadow-2xl flex flex-col items-center gap-2 cursor-pointer transition-all border-l border-t border-b border-[#43392e] group"
+                title="Mở bảng Luận Giải Chi Tiết AI"
+              >
+                <Sparkles className="w-4 h-4 text-[#facc15] group-hover:scale-110 transition-transform" />
+                <span className="[writing-mode:vertical-rl] text-[11px] font-extrabold tracking-widest text-[#f8fafc]">
+                  LUẬN GIẢI AI
+                </span>
+                {isAiLoading ? (
+                  <span className="w-2 h-2 rounded-full bg-[#f59e0b] animate-ping" />
+                ) : analysisText ? (
+                  <span className="w-2 h-2 rounded-full bg-[#10b981]" />
+                ) : null}
+                <ChevronLeft className="w-3.5 h-3.5 text-white/70 group-hover:-translate-x-0.5 transition-transform" />
+              </button>
+            )}
           </div>
         )}
       </div>

@@ -461,7 +461,7 @@ export function createTuViChart({ name, gender, solarDay, solarMonth, solarYear,
   const tuanDiff = (yearChiIndex - yearCanIndex + 12) % 12;
   const tuanPositions = [(10 + tuanDiff) % 12, (11 + tuanDiff) % 12];
 
-  // 20. Tính Đại Hạn, Tiểu Hạn Tháng & Cung Đại Vận (ĐV) / Lưu Niên (LN)
+  // 20. Tính Đại Hạn, Tiểu Hạn Tháng & Cung Đại Vận (ĐV) / Lưu Niên (LN) đầy đủ tên
   const daiHanMatrix = new Array(12);
   const thangTieuHanMatrix = new Array(12);
   const daiVanCungMatrix = new Array(12);
@@ -471,7 +471,7 @@ export function createTuViChart({ name, gender, solarDay, solarMonth, solarYear,
     const offset = isDuongNamAmNu ? i : (12 - i) % 12;
     const pos = (menhPos + offset) % 12;
     daiHanMatrix[pos] = cucNumber + i * 10;
-    daiVanCungMatrix[pos] = `ĐV.${cungNamesArr[pos].substring(0, 4).toUpperCase()}`;
+    daiVanCungMatrix[pos] = `ĐV.${cungNamesArr[pos].toUpperCase()}`;
   }
 
   // Khởi tiểu hạn tháng: Bắt đầu từ cung tiểu hạn năm tính theo tháng sinh và giờ sinh
@@ -480,7 +480,7 @@ export function createTuViChart({ name, gender, solarDay, solarMonth, solarYear,
     const monthIndex = (i + 1);
     const pos = (menhPos + i) % 12;
     thangTieuHanMatrix[pos] = `Th.${monthIndex}`;
-    luuNienCungMatrix[pos] = `LN.${cungNamesArr[pos].substring(0, 4).toUpperCase()}`;
+    luuNienCungMatrix[pos] = `LN.${cungNamesArr[pos].toUpperCase()}`;
   }
 
   // 21. Chủ Mệnh & Chủ Thân

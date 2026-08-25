@@ -30,7 +30,7 @@ export default function HistorySidebar({
             </div>
             <div>
               <h3 className="text-sm font-bold text-[#2d261e]">Hồ Sơ Đã Xem</h3>
-              <p className="text-[11px] text-[#786d5e]">Lưu trữ IndexedDB cục bộ</p>
+              <p className="text-[11px] text-[#786d5e]">Lưu trữ cục bộ</p>
             </div>
           </div>
 

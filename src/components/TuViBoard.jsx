@@ -258,48 +258,24 @@ export default function TuViBoard({ chartData, selectedCungIndex, onSelectCung, 
   }
 
   return (
-    <div className="warm-card p-4 sm:p-6 mb-6 relative">
-      {/* Header */}
-      <div className="flex flex-col border-b border-[#eee8dc] pb-3 mb-4 gap-2.5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-          <div>
-            <h3 className="text-base sm:text-lg font-black text-[#241e17] tracking-tight">
-              Thiên Bàn 12 Cung & Mối Quan Hệ Chiếu Mệnh
-            </h3>
-            <p className="text-xs text-[#6e6456]">
-              Rê chuột vào cung bất kỳ để xem các đường nối <strong className="text-blue-600">Tam Hợp</strong> và <strong className="text-rose-600">Chính Chiếu</strong>
-            </p>
-          </div>
-
-          <div className="flex items-center gap-2 text-xs self-start sm:self-auto">
-            <span className="flex items-center gap-1 font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
-              <span className="w-2 h-0.5 bg-blue-600 inline-block"></span> Tam Hợp
-            </span>
-            <span className="flex items-center gap-1 font-semibold text-rose-700 bg-rose-50 px-2 py-0.5 rounded border border-rose-200">
-              <span className="w-2 h-0.5 bg-rose-600 inline-block"></span> Chính Chiếu
-            </span>
-          </div>
+    <div className="warm-card p-2.5 sm:p-3.5 mb-2 relative max-w-[1240px] mx-auto">
+      {/* Header gọn gàng tiết kiệm diện tích */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-[#eee8dc] pb-2 mb-2 gap-1.5">
+        <div className="flex items-center gap-2">
+          <h3 className="text-sm sm:text-base font-black text-[#241e17] tracking-tight">
+            Thiên Bàn 12 Cung & Mối Quan Hệ Chiếu Mệnh
+          </h3>
+          <span className="text-[11px] text-[#786d5e] hidden md:inline">
+            (Rê chuột xem <strong className="text-blue-600">Tam Hợp</strong> & <strong className="text-rose-600">Chính Chiếu</strong>)
+          </span>
         </div>
 
-        {/* Thanh Chú Thích Ký Hiệu Trực Quan (Legend Bar) để người xem hiểu ngay */}
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 pt-2 border-t border-[#f2ece1] text-[11px] text-[#6b5f4f]">
-          <span className="font-bold text-[#423728] flex items-center gap-1">
-            📌 Chú thích:
+        <div className="flex items-center gap-2 text-[11px]">
+          <span className="flex items-center gap-1 font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200">
+            <span className="w-2 h-0.5 bg-blue-600 inline-block"></span> Tam Hợp
           </span>
-          <span className="flex items-center gap-1">
-            <strong className="text-[#047857] font-bold bg-[#ecfdf5] px-1 rounded border border-[#a7f3d0]">+Sao</strong> Cát tinh (May mắn, trợ lực)
-          </span>
-          <span className="flex items-center gap-1">
-            <strong className="text-[#b91c1c] font-bold bg-[#fef2f2] px-1 rounded border border-[#fecaca]">-Sao</strong> Hung sát tinh (Thử thách)
-          </span>
-          <span className="flex items-center gap-1">
-            <strong className="text-[#b45309] font-bold bg-[#fffbeb] px-1 rounded border border-[#fde68a]">★ Sao</strong> Tứ Hóa Cát (Lộc/Quyền/Khoa)
-          </span>
-          <span className="flex items-center gap-1">
-            <strong className="text-[#991b1b] font-bold bg-[#fef2f2] px-1 rounded border border-[#fecaca]">⚡ Hóa Kỵ</strong> Trắc trở, thị phi
-          </span>
-          <span className="flex items-center gap-1">
-            <strong className="text-[#9a3412] font-bold bg-[#ffedd5] px-1 rounded border border-[#fed7aa]">(Miếu/Vượng/Hãm)</strong> Độ sáng & Uy lực
+          <span className="flex items-center gap-1 font-bold text-rose-700 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">
+            <span className="w-2 h-0.5 bg-rose-600 inline-block"></span> Chính Chiếu
           </span>
         </div>
       </div>
@@ -346,7 +322,7 @@ export default function TuViBoard({ chartData, selectedCungIndex, onSelectCung, 
         )}
 
         {/* Bàn 12 Cung Grid 4x4: Đặt z-0 cho grid chung */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 relative z-0 items-stretch">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 relative z-0 items-stretch">
           {/* Hàng 1: Tỵ (5), Ngọ (6), Mùi (7), Thân (8) */}
           <div 
             ref={el => cungRefs.current[5] = el} 
@@ -422,15 +398,15 @@ export default function TuViBoard({ chartData, selectedCungIndex, onSelectCung, 
           </div>
 
           {/* TRUNG CUNG (Thiên Bàn Thông Tin Trung Tâm - Chuẩn mực đầy đủ) */}
-          <div className="md:col-span-2 md:row-span-2 rounded-2xl bg-[#faf7f0] border-2 border-[#ded6c7] p-4 sm:p-5 flex flex-col justify-between text-center relative shadow-xs z-0">
+          <div className="md:col-span-2 md:row-span-2 rounded-2xl bg-[#faf7f0] border-2 border-[#ded6c7] p-3 sm:p-4 flex flex-col justify-between text-center relative shadow-xs z-0">
             <div>
-              <span className="text-[11px] font-black text-[#c48b4d] uppercase tracking-wider block mb-0.5">
+              <span className="text-[10px] font-black text-[#c48b4d] uppercase tracking-wider block mb-0.5">
                 LÁ SỐ TỬ VI ĐẨU SỐ TOÀN THƯ
               </span>
-              <h4 className="text-xl sm:text-2xl font-black text-[#1a1510] tracking-tight mb-1">
+              <h4 className="text-lg sm:text-xl font-black text-[#1a1510] tracking-tight mb-0.5">
                 {info.name}
               </h4>
-              <div className="inline-flex items-center gap-2 px-3 py-0.5 rounded-full bg-[#eee7d8] text-[#4d4234] text-xs font-bold border border-[#ddd3c1]">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#eee7d8] text-[#4d4234] text-[11px] font-bold border border-[#ddd3c1]">
                 <span>{info.amDuongGender || info.gender}</span>
                 <span>•</span>
                 <span>Năm: {info.canChiYear}</span>
@@ -440,7 +416,7 @@ export default function TuViBoard({ chartData, selectedCungIndex, onSelectCung, 
             </div>
 
             {/* Bảng Chi Tiết Sinh Thần Bát Tự & Cân Lượng */}
-            <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-left my-2 pt-2.5 border-t border-[#e5decfa] text-xs sm:text-[12.5px] text-[#382f25]">
+            <div className="grid grid-cols-2 gap-x-2.5 gap-y-1 text-left my-1.5 pt-1.5 border-t border-[#e5decfa] text-[11px] sm:text-[11.5px] text-[#382f25]">
               <div>
                 <span className="text-[#786d5e]">Dương Lịch:</span> <strong className="text-[#241e17] font-bold ml-1">{info.solarDate}</strong>
               </div>
@@ -459,7 +435,7 @@ export default function TuViBoard({ chartData, selectedCungIndex, onSelectCung, 
               <div>
                 <span className="text-[#786d5e]">Cục:</span> <strong className="text-[#241e17] font-bold ml-1">{info.cucName}</strong>
               </div>
-              <div className="col-span-2 text-[11.5px] bg-[#f4eee1] px-2 py-0.5 rounded text-[#5c4e3c] font-medium">
+              <div className="col-span-2 text-[10.5px] bg-[#f4eee1] px-2 py-0.5 rounded text-[#5c4e3c] font-medium">
                 <span>Quan hệ Mệnh Cục: </span><strong className="text-[#241e17] font-bold">{info.cucMenhRelation}</strong>
               </div>
               <div>
@@ -476,9 +452,8 @@ export default function TuViBoard({ chartData, selectedCungIndex, onSelectCung, 
               </div>
             </div>
 
-            <div className="text-xs text-[#786d5e] border-t border-[#e5decfa] pt-1.5 font-medium flex justify-between items-center">
+            <div className="text-[11px] text-[#786d5e] border-t border-[#e5decfa] pt-1 font-medium flex justify-between items-center">
               <span>Năm xem: <strong className="text-[#c48b4d]">{info.viewYearCanChi || info.viewYear}</strong></span>
-              <span className="text-[11px] text-[#a89f91]">Đầy đủ 100+ Tinh Tú & Lưu Hạn L.</span>
             </div>
           </div>
 
