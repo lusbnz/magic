@@ -107,7 +107,7 @@ export default function AiAnalysisView({ analysisText, selectedCung, isLoading =
             return (
               <div
                 key={idx}
-                className="p-4 rounded-xl bg-[#faf7f0] border border-[#e8e2d5] shadow-2xs space-y-3"
+                className="p-4 rounded-xl shimmer-card shadow-2xs space-y-3"
               >
                 {/* Header Skeleton Card */}
                 <div className="flex items-center gap-2 border-b border-[#eee7d8] pb-2">
