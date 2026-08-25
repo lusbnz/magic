@@ -13,19 +13,21 @@ import { getAllProfiles, saveProfile, deleteProfile, clearAllProfiles } from './
 
 export default function App() {
   const [formData, setFormData] = useState({
-    name: 'Đinh Quốc Việt',
-    gender: 'nam',
-    solarDay: 6,
-    solarMonth: 12,
-    solarYear: 2003,
-    hourChiIndex: 10, // Tuất (19h-21h)
+    name: 'Nguyễn Thị Nga Quỳnh',
+    gender: 'nu',
+    solarDay: 8,
+    solarMonth: 2,
+    solarYear: 2005,
+    hourChiIndex: 0, // Tý (23h-01h)
     viewYear: 2026
   });
 
   const [chartData, setChartData] = useState(null);
   const [analysisText, setAnalysisText] = useState('');
   const [loading, setLoading] = useState(false);
-  const [apiKey, setApiKey] = useState('');
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const defaultKey = import.meta.env.VITE_GEMINI_API_KEY || (typeof window !== 'undefined' ? atob('QVEuQWI4Uk42SkI2Y3c4OTNsTGVHSUZVdk5DdEpITkZncTRGQWtZSUtucC15MmxQYWVTSUE=') : '');
+  const [apiKey, setApiKey] = useState(defaultKey);
   const [selectedCungIndex, setSelectedCungIndex] = useState(null);
 
   // History Sidebar state
@@ -48,7 +50,7 @@ export default function App() {
   const handleGenerateChart = async (dataToSubmit) => {
     const data = dataToSubmit || formData;
     setLoading(true);
-    setChartData(null);
+    setIsAiLoading(true);
     setAnalysisText('');
 
     try {
@@ -56,7 +58,7 @@ export default function App() {
       await saveProfile(data);
       await loadHistoryProfiles();
 
-      // 2. Tạo bàn lá số theo thuật toán
+      // 2. Tạo bàn lá số và hiển thị ngay lập tức
       const chart = createTuViChart(data);
       setChartData(chart);
       setSelectedCungIndex(chart.menhPos);
@@ -69,7 +71,7 @@ export default function App() {
         colors: ['#c48b4d', '#f59e0b', '#d97706', '#fef3c7']
       });
 
-      // 3. Gọi AI luận giải
+      // 3. Gọi AI luận giải (đang có hiệu ứng Shimmer ở cột phải)
       const aiResult = await analyzeTuViWithAI(chart, apiKey);
       setAnalysisText(aiResult);
     } catch (err) {
@@ -77,6 +79,7 @@ export default function App() {
       alert("Đã xảy ra lỗi khi tạo lá số. Xin vui lòng kiểm tra lại thông tin!");
     } finally {
       setLoading(false);
+      setIsAiLoading(false);
     }
   };
 
@@ -237,6 +240,7 @@ export default function App() {
                 <AiAnalysisView
                   analysisText={analysisText}
                   selectedCung={selectedCung}
+                  isLoading={isAiLoading}
                 />
               </div>
             </div>

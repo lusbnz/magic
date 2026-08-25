@@ -1,14 +1,13 @@
 /**
- * Service tích hợp Gemini AI cho Luận Giải & Chatbot Tử Vi
+ * Service tích hợp Gemini AI và Engine Luận Giải Chuyên Sâu Tự Động cho Tử Vi Đẩu Số
  */
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// Danh sách các model fallback theo thứ tự ưu tiên
+// Danh sách các model AI thế hệ mới theo thứ tự ưu tiên
 const CANDIDATE_MODELS = [
-  "gemini-1.5-flash-latest",
-  "gemini-1.5-flash",
-  "gemini-1.5-pro",
-  "gemini-pro"
+  "gemini-3.6-flash",
+  "gemini-3.5-flash",
+  "gemini-3.7-flash"
 ];
 
 export async function analyzeTuViWithAI(chartData, apiKey = "") {
@@ -17,43 +16,45 @@ export async function analyzeTuViWithAI(chartData, apiKey = "") {
   if (key.length > 10) {
     const prompt = `
 Bạn là một bậc thầy uyên bác về Huyền Học Đông Phương và Tử Vi Đẩu Số với hơn 30 năm kinh nghiệm nghiên cứu cổ thư (Tử Vi Đẩu Số Toàn Thư).
-Hãy luận giải chi tiết và sâu sắc lá số Tử Vi sau:
+Hãy luận giải chi tiết, sâu sắc và chuẩn xác cho lá số Tử Vi sau:
 
 THÔNG TIN ĐƯƠNG SỐ:
 - Họ và tên: ${chartData.info.name}
-- Giới tính: ${chartData.info.gender}
+- Giới tính: ${chartData.info.gender} (${chartData.info.amDuongGender})
 - Ngày sinh Dương Lịch: ${chartData.info.solarDate}
 - Ngày sinh Âm Lịch: ${chartData.info.lunarDate}
-- Năm Can Chi: ${chartData.info.canChiYear} | Tháng: ${chartData.info.canChiMonth} | Ngày: ${chartData.info.canChiDay} | Giờ: ${chartData.info.canChiHour}
+- Can Chi Bát Tự: Năm ${chartData.info.canChiYear} | Tháng ${chartData.info.canChiMonth} | Ngày ${chartData.info.canChiDay} | Giờ ${chartData.info.canChiHour}
 - Bản Mệnh: ${chartData.info.nguHanh}
-- Cục: ${chartData.info.cucName}
+- Cục: ${chartData.info.cucName} ${chartData.info.cucMenhRelation}
 - Cung Mệnh tại: ${chartData.info.cungMenhChi}
 - Cung Thân cư: ${chartData.info.cungThanChi}
-- Năm xem vận hạn: ${chartData.info.viewYear}
+- Chủ Mệnh: ${chartData.info.chuMenh} | Chủ Thân: ${chartData.info.chuThan}
+- Năm xem vận hạn: ${chartData.info.viewYear} (${chartData.info.viewYearCanChi})
 
 CHI TIẾT 12 CUNG VỊ:
-${chartData.cungList.map(c => `- Cung ${c.cungTen} (tại ${c.chi}): Chính tinh [${c.chinhTinh.map(s => `${s.name} (${s.dacTinh || ''})`).join(', ') || 'Vô chính diệu'}], Cát tinh [${c.catTinh.map(s => s.name).join(', ')}], Hung sát tinh [${c.hungTinh.map(s => s.name).join(', ')}]`).join('\n')}
+${chartData.cungList.map(c => `- Cung ${c.cungTen} (tại ${c.chi} - ${c.cungCanChi}): Chính tinh [${c.chinhTinh.map(s => `${s.name} (${s.dacTinh || ''})`).join(', ') || 'Vô chính diệu'}], Cát tinh [${c.catTinh.map(s => s.name).join(', ')}], Hung sát tinh [${c.hungTinh.map(s => s.name).join(', ')}], Lưu tinh [${c.luuTinh.map(s => s.name).join(', ')}]`).join('\n')}
 
-HÃY ĐƯA RA LUẬN GIẢI CHUẨN XÁC, SÚC TÍCH, DÙNG VĂN PHONG TRẦM ẤM, TRIẾT LÝ VÀ ĐẦY ĐỦ CÁC PHẦN DƯỚI ĐÂY (định dạng Markdown):
+HÃY ĐƯA RA BẢN LUẬN GIẢI ĐẦY ĐỦ, CHUẨN XÁC, DÙNG VĂN PHONG TRẦM ẤM, TRIẾT LÝ VÀ CHUYÊN SÂU THEO CÁC MỤC DƯỚI ĐÂY (định dạng Markdown):
 ### 1. 🌟 TỔNG QUAN BẢN MỆNH & TÍNH CÁCH
-- Phân tích tương quan Mệnh (${chartData.info.nguHanh}) và Cục (${chartData.info.cucName}).
-- Tính cách cốt lõi, ưu điểm, nhược điểm nổi bật từ cách cục Cung Mệnh & Thân.
+- Luận giải tương quan Mệnh (${chartData.info.nguHanh}) và Cục (${chartData.info.cucName}).
+- Tính cách cốt lõi, ưu điểm, nhược điểm nổi bật từ cách cục Cung Mệnh & Cung Thân.
 
 ### 2. 💼 SỰ NGHIỆP, CÔNG DANH & ĐỊA VỊ (CUNG QUAN LỘC)
+- Phân tích các sao thủ cung Quan Lộc.
 - Ngành nghề, lĩnh vực phù hợp nhất để phát huy tiềm năng tối đa.
-- Cơ hội thăng tiến và thử thách trên con đường lập thân.
+- Lộ trình thăng tiến và thử thách trên con đường lập thân.
 
 ### 3. 💰 TÀI BẠCH, TIỀN TÀI & ĐẦU TƯ (CUNG TÀI BẠCH - ĐIỀN TRẠCH)
-- Con đường tụ tài hay tán tài, vận tiền bạc theo các giai đoạn cuộc đời.
-- Lời khuyên về đầu tư, tích lũy điền sản.
+- Phân tích nguồn tài lộc, con đường tụ tài hay tán tài.
+- Vận số nhà đất, điền sản và lời khuyên tích lũy tài chính.
 
 ### 4. ❤️ TÌNH DUYÊN, GIA ĐẠO & CON CÁI (CUNG PHU THÊ - TỬ TỨC)
-- Đặc điểm người bạn đời tương lai, duyên nợ vợ chồng.
-- Phúc khí gia đạo và hậu vận đường con cái.
+- Đặc điểm người bạn đời tương lai, duyên nợ vợ chồng và lời khuyên hòa hợp gia đạo.
+- Hậu vận đường con cái.
 
 ### 5. 🔮 VẬN HẠN NĂM ${chartData.info.viewYear} & LỜI KHUYÊN HÓA GIẢI
-- Những cơ hội vàng và đại hạn/hung tinh cần đề phòng trong năm nay.
-- Lời khuyên tu dưỡng, phong thủy hóa giải và phát triển phước đức.
+- Phân tích lưu niên, sao lưu chiếu vào các cung trong năm ${chartData.info.viewYear}.
+- Lời khuyên tu dưỡng, phong thủy hóa giải và kích hoạt phước báu.
 `;
 
     const genAI = new GoogleGenerativeAI(key);
@@ -68,38 +69,246 @@ HÃY ĐƯA RA LUẬN GIẢI CHUẨN XÁC, SÚC TÍCH, DÙNG VĂN PHONG TRẦM �
           return text;
         }
       } catch (err) {
-        console.warn(`Model ${modelName} failed, trying next model:`, err?.message || err);
+        console.warn(`Model ${modelName} failed, trying next candidate:`, err?.message || err);
       }
     }
   }
 
-  // Fallback sang engine luận giải thông minh nếu chưa có key hoặc key lỗi
-  return generateExpertLocalInterpretation(chartData);
+  // Luận giải động tự động theo thuật toán chuyên sâu nếu không dùng API key
+  return generateDynamicExpertInterpretation(chartData);
 }
 
+// Từ điển ý nghĩa 14 Chính Tinh khi thủ Mệnh/Quan/Tài
+const STAR_MEANINGS = {
+  "Tử Vi": {
+    menh: "Đế tinh chí tôn, phong thái ung dung, đĩnh đạc, có tài lãnh đạo, tính tự trọng cao và luôn có khát vọng vươn lên vị trí dẫn đầu.",
+    quan: "Rất hợp vai trò lãnh đạo, quản lý cấp cao, điều hành doanh nghiệp, cơ quan hành chính hoặc tự chủ kinh doanh lớn.",
+    tai: "Tài lộc chính đính, tụ tài bền vững, dễ được quý nhân tài trợ và hậu thuẫn nguồn vốn lớn."
+  },
+  "Thiên Cơ": {
+    menh: "Mưu tinh mẫn tiệp, tư duy sắc bén, trí tuệ linh hoạt, giỏi tính toán mưu lược và thích ứng cực nhanh với sự thay đổi.",
+    quan: "Hợp lĩnh vực công nghệ, lập kế hoạch, tư vấn chiến lược, nghiên cứu khoa học, tài chính hoặc truyền thông sáng tạo.",
+    tai: "Tài lộc biến động nhanh nhạy, kiếm tiền bằng chất xám, đầu óc tính toán và các cơ hội công nghệ đổi mới."
+  },
+  "Thái Dương": {
+    menh: "Quang minh chính đại, nhiệt huyết, bác ái, phóng khoáng, trọng danh dự và có sức ảnh hưởng tích cực lan tỏa đến cộng đồng.",
+    quan: "Hợp ngành ngoại giao, pháp lý, chính trị, giáo dục, truyền thông đại chúng hoặc quản lý doanh nghiệp quy mô lớn.",
+    tai: "Tiền bạc đi kèm với danh tiếng, lấy chữ Tín làm đầu, chi tiêu rộng rãi và biết tạo phước lộc từ hoạt động xã hội."
+  },
+  "Vũ Khúc": {
+    menh: "Tài tinh cương nghị, quyết đoán, giàu ý chí độc lập, kỷ luật cao, nói ít làm nhiều và có năng khiếu kinh doanh thiên bẩm.",
+    quan: "Đặc biệt xuất sắc trong ngành tài chính, ngân hàng, kế toán, bất động sản, quân đội hoặc quản trị kinh doanh thực chiến.",
+    tai: "Là đại tài tinh, khả năng tích lũy tiền bạc phi thường, biết giữ tiền và phân bổ vốn rất chặt chẽ."
+  },
+  "Thiên Đồng": {
+    menh: "Phúc tinh đôn hậu, tính tình vui vẻ, hòa nhã, có tâm hồn nghệ sĩ, giàu trực giác và dễ đón nhận quý nhân tương trợ.",
+    quan: "Hợp công việc dịch vụ, du lịch, giải trí, văn hóa nghệ thuật, chăm sóc cộng đồng hoặc đối ngoại thân thiện.",
+    tai: "Tiền bạc tụ tán tùy duyên, hay gặp may mắn bất ngờ, về hậu vận tài khố sung túc đủ đầy."
+  },
+  "Liêm Trinh": {
+    menh: "Chính khí thanh liêm, sắc sảo, tự tôn cao, dám chịu trách nhiệm, tính cách cương trực và có sức hút đào hoa tiềm ẩn.",
+    quan: "Hợp ngành luật pháp, công an, giám sát, kỹ thuật công nghệ cao, quản trị nhân sự hoặc nghệ thuật chuyên nghiệp.",
+    tai: "Kiếm tiền bằng thực lực và kỷ luật nghiêm ngặt, đề phòng tranh chấp hợp đồng để giữ trọn tài lộc."
+  },
+  "Thiên Phủ": {
+    menh: "Lệnh tinh kho báu, điềm đạm, bao dung, chín chắn, biết nhìn xa trông rộng và sở hữu phong thái của người gầy dựng cơ nghiệp.",
+    quan: "Hợp vị trí giám đốc tài chính, quản lý tài sản, ngân hàng, kinh doanh thương mại hoặc chủ quản cơ sở độc lập.",
+    tai: "Đắc cách 'Kho Vàng Trời Ban', quản lý dòng tiền xuất sắc, tiền bạc vào nhiều ra ít, tích lũy điền sản rất lớn."
+  },
+  "Thái Âm": {
+    menh: "Nguyệt tinh dịu dàng, tinh tế, giàu tình cảm, có gu thẩm mỹ cao, kín đáo và có duyên kỳ lạ với bất động sản.",
+    quan: "Hợp lĩnh vực bất động sản, tài chính đầu tư, nghệ thuật thiết kế, văn chương, kinh doanh thời trang hoặc khách sạn cao cấp.",
+    tai: "Tài phú dồi dào, kiếm tiền âm thầm nhưng bền chặt, càng về trung và hậu vận điền sản nhà đất càng phồn thịnh."
+  },
+  "Tham Lang": {
+    menh: "Đa tài đa nghệ, năng động, quảng giao, nhiều khát vọng lớn, tính cách cuốn hút và không ngừng tìm kiếm đột phá.",
+    quan: "Rất hợp khởi nghiệp, thương mại quốc tế, giải trí, marketing, ẩm thực, làm đẹp hoặc các ngành nghề xu hướng mới.",
+    tai: "Có duyên đón nhận những khoản hoạch tài, tiền tài đến từ sự nhạy bén thương trường và quan hệ đối ngoại rộng rãi."
+  },
+  "Cự Môn": {
+    menh: "Hùng biện, tư duy phản biện sâu sắc, óc quan sát tỉ mỉ, có khả năng nhìn thấu bản chất vấn đề và tài diễn thuyết lôi cuốn.",
+    quan: "Đắc địa trong ngành luật sư, tư vấn chuyên sâu, giảng dạy, ngoại giao, nghiên cứu học thuật hoặc truyền thông báo chí.",
+    tai: "Kiếm tiền nhờ khẩu tài và chất xám uyên bác, cần chú ý giữ hòa khí để tài lộc luôn suôn sẻ hanh thông."
+  },
+  "Thiên Tướng": {
+    menh: "Ấn tinh trượng nghĩa, ngay thẳng, hết lòng vì tập thể, có năng lực phò tá và quản trị điều hành mẫu mực.",
+    quan: "Hợp làm phó tướng đắc lực, giám đốc điều hành (COO), y khoa, sư phạm, công chức hoặc quản lý chất lượng.",
+    tai: "Tài lộc minh bạch, ổn định, được cấp trên tin cậy giao phó những nguồn tài chính quan trọng."
+  },
+  "Thiên Lương": {
+    menh: "Ấm tinh thọ tinh, nhân hậu, đức độ, thích giúp đỡ che chở người khác, có khí chất của bậc thầy, người chỉ đường đáng kính.",
+    quan: "Hợp ngành y tế, dược phẩm, giáo dục, tâm lý, công tác xã hội, bảo hiểm hoặc cố vấn chiến lược độc lập.",
+    tai: "Tiền bạc thanh khiết, tích đức sinh tài, phước báu càng dày thì tài lộc và tuổi thọ càng tăng tiến."
+  },
+  "Thất Sát": {
+    menh: "Tướng tinh dũng mãnh, quyết đoán, khí phách kiên cường, dám nghĩ dám làm, không ngại đương đầu với gian nan thử thách.",
+    quan: "Hợp ngành quân đội, công an, cơ khí chế tạo, kiến trúc công trình, phẫu thuật hoặc dẫn đầu các dự án mạo hiểm.",
+    tai: "Kiếm tiền bằng sự táo bạo và can trường, trải qua sóng gió thời trẻ để đạt được cơ đồ rực rỡ lúc trưởng thành."
+  },
+  "Phá Quân": {
+    menh: "Tiên phong cải cách, dám phá vỡ quy chuẩn cũ để dựng xây cái mới, ý chí độc lập cao, giàu tinh thần dấn thân phiêu lưu.",
+    quan: "Rất hợp môi trường đổi mới sáng tạo, công nghệ đột phá, xây dựng, xuất nhập khẩu hoặc kinh doanh mạo hiểm.",
+    tai: "Tài vận có những bước ngoặt lớn, dũng cảm chuyển hướng đúng thời điểm sẽ tạo dựng gia sản đồ sộ."
+  }
+};
+
+/**
+ * Trình sinh luận giải động chuyên sâu dựa trên lá số cụ thể
+ */
+export function generateDynamicExpertInterpretation(chartData) {
+  const info = chartData.info;
+  const cungList = chartData.cungList;
+
+  const menh = cungList.find(c => c.isMenh) || cungList[0];
+  const than = cungList.find(c => c.isThan) || cungList[0];
+  const quan = cungList.find(c => c.cungTen === "Quan Lộc") || cungList[4];
+  const tai = cungList.find(c => c.cungTen === "Tài Bạch") || cungList[8];
+  const the = cungList.find(c => c.cungTen === "Phu Thê") || cungList[10];
+  const dien = cungList.find(c => c.cungTen === "Điền Trạch") || cungList[3];
+  const phuc = cungList.find(c => c.cungTen === "Phúc Đức") || cungList[2];
+  const tuTuc = cungList.find(c => c.cungTen === "Tử Tức") || cungList[9];
+  const di = cungList.find(c => c.cungTen === "Thiên Di") || cungList[6];
+
+  // Danh sách tên chính tinh & đặc tính
+  const formatStars = (cung) => {
+    if (!cung || cung.chinhTinh.length === 0) {
+      return "Vô Chính Diệu (mượn tinh diệu cung xung chiếu)";
+    }
+    return cung.chinhTinh.map(s => `**${s.name}** (${s.dacTinh || 'Đắc'})`).join(" & ");
+  };
+
+  const getStarNames = (cung) => cung ? cung.chinhTinh.map(s => s.name) : [];
+  const getCatNames = (cung) => cung ? cung.catTinh.map(s => s.name) : [];
+  const getHungNames = (cung) => cung ? cung.hungTinh.map(s => s.name) : [];
+
+  const menhStarNames = getStarNames(menh);
+  const quanStarNames = getStarNames(quan);
+  const taiStarNames = getStarNames(tai);
+  const theStarNames = getStarNames(the);
+
+  // 1. Phân tích Cung Mệnh & Thân
+  let menhAnalysisText = "";
+  if (menhStarNames.length > 0) {
+    menhAnalysisText = menhStarNames.map(name => STAR_MEANINGS[name]?.menh || `Chính tinh ${name} chủ về sự kiên định và tài năng độc đáo.`).join(" ");
+  } else {
+    menhAnalysisText = "Mệnh Vô Chính Diệu là người mẫn cảm, linh hoạt, khả năng hấp thu kiến thức cực nhanh và thích ứng uyển chuyển với mọi hoàn cảnh xã hội.";
+  }
+
+  const menhCatText = getCatNames(menh).length > 0 
+    ? `Hội tụ các cát tinh trợ lực: *${getCatNames(menh).slice(0, 6).join(", ")}*, tạo nên nguồn trợ lực quý báu từ quý nhân và bạn bè.`
+    : "Bản mệnh cần dựa nhiều vào nỗ lực tự thân và sự trau dồi chuyên môn bền bỉ.";
+
+  // Thân cư
+  const thanCuMap = {
+    "Mệnh": "Thân cư Mệnh: Thể hiện tính cách nhất quán trước sau như một, tự lực tự cường và sống kiên định theo lý tưởng riêng.",
+    "Phúc Đức": "Thân cư Phúc Đức: Coi trọng cội nguồn gia tộc, hướng về đời sống tâm linh thiện lành và luôn tìm kiếm sự an lạc nội tâm.",
+    "Quan Lộc": "Thân cư Quan Lộc: Đặt sự nghiệp và công danh làm trọng tâm cuộc đời, không ngừng phấn đấu nâng cao vị thế xã hội.",
+    "Tài Bạch": "Thân cư Tài Bạch: Rất thực tế, nhạy bén với cơ hội tài chính, chú trọng tích lũy của cải để tạo dựng nền tảng vững chắc.",
+    "Phu Thê": "Thân cư Phu Thê: Đời sống và sự nghiệp gắn bó mật thiết với người bạn đời, chịu ảnh hưởng tích cực từ hôn nhân viên mãn.",
+    "Thiên Di": "Thân cư Thiên Di: Năng động, thích dịch chuyển, có duyên lập nghiệp phương xa hoặc gặt hái thành công trong môi trường quốc tế."
+  };
+  const thanCuText = thanCuMap[than?.cungTen] || `Thân cư ${than?.cungTen || 'Tài Bạch'}: Định hướng hậu vận tập trung vào việc kiến tạo giá trị thực tế.`;
+
+  // 2. Phân tích Quan Lộc
+  let quanAnalysisText = "";
+  if (quanStarNames.length > 0) {
+    quanAnalysisText = quanStarNames.map(name => STAR_MEANINGS[name]?.quan || `Chính tinh ${name} mang lại thế mạnh đặc thù trong công việc.`).join(" ");
+  } else {
+    quanAnalysisText = "Cung Quan Lộc Vô Chính Diệu cho thấy bạn hợp với các công việc mang tính tự do, linh hoạt, tư vấn chiến lược, công nghệ đổi mới hoặc làm việc nhóm đa chức năng.";
+  }
+
+  // 3. Phân tích Tài Bạch & Điền Trạch
+  let taiAnalysisText = "";
+  if (taiStarNames.length > 0) {
+    taiAnalysisText = taiStarNames.map(name => STAR_MEANINGS[name]?.tai || `Chính tinh ${name} bổ trợ cho nguồn thu nhập bền vững.`).join(" ");
+  } else {
+    taiAnalysisText = "Cung Tài Bạch Vô Chính Diệu cho thấy dòng tiền lưu chuyển linh hoạt. Cần chú trọng kế hoạch quản trị rủi ro và tích lũy có hệ thống.";
+  }
+
+  const dienCat = getCatNames(dien);
+  const dienText = dienCat.length > 0
+    ? `Cung Điền Trạch tọa tại **${dien?.chi}** hội tụ cát tinh *${dienCat.slice(0, 4).join(", ")}*: Hậu vận đất đai, nhà cửa hưng vượng, sở hữu cơ ngơi khang trang ấm cúng.`
+    : `Cung Điền Trạch tại **${dien?.chi}**: Tích lũy bất động sản nên theo hướng dài hạn, pháp lý rõ ràng, an cư ắt sẽ lập nghiệp vẻ vang.`;
+
+  // 4. Phân tích Phu Thê
+  let theAnalysisText = "";
+  if (theStarNames.length > 0) {
+    theAnalysisText = `Người bạn đời là người có tài năng, khí chất và cá tính rõ nét thông qua ảnh hưởng của bộ sao ${theStarNames.join(", ")}.`;
+  } else {
+    theAnalysisText = "Cung Phu Thê Vô Chính Diệu: Duyên phận đến tự nhiên, vợ chồng nên thấu hiểu, tôn trọng không gian riêng của nhau để tình cảm luôn bền chặt.";
+  }
+
+  // 5. Vận hạn năm xem
+  const viewYear = info.viewYear || 2026;
+  const viewYearCanChi = info.viewYearCanChi || "Bính Ngọ (2026)";
+
+  return `### 1. 🌟 TỔNG QUAN BẢN MỆNH & TÍNH CÁCH
+- **Bản Mệnh & Cục**: Đương số **${info.name}** (${info.gender} - ${info.amDuongGender}), tuổi **${info.canChiYear}**, nạp âm **${info.nguHanh}**, thuộc Cục **${info.cucName}** ${info.cucMenhRelation}. Cân lượng tính số: **${info.canLuongText}**.
+- **Cung Mệnh tại ${info.cungMenhChi} (${formatStars(menh)})**:
+  • ${menhAnalysisText}
+  • ${menhCatText}
+- **Cung Thân cư ${info.cungThanChi} (tại ${than?.cungTen || 'Mệnh'})**:
+  • ${thanCuText}
+
+### 2. 💼 SỰ NGHIỆP, CÔNG DANH & ĐỊA VỊ (CUNG QUAN LỘC)
+- **Tọa cung Quan Lộc tại ${quan?.chi} (${formatStars(quan)})**:
+  • ${quanAnalysisText}
+  • Cát hung tinh hội chiếu: *${[...getCatNames(quan), ...getHungNames(quan)].slice(0, 5).join(", ") || "Hội chiếu thanh nhã"}*.
+- **Định hướng & Lộ trình phát triển**:
+  • Phát huy tối đa sở trường chuyên môn độc lập, mở rộng kết nối với các đối tác uy tín.
+  • Luôn giữ tinh thần học hỏi liên tục để nắm bắt kịp thời các làn sóng công nghệ và xu hướng thời đại.
+
+### 3. 💰 TÀI BẠCH, TIỀN TÀI & ĐẦU TƯ (CUNG TÀI BẠCH - ĐIỀN TRẠCH)
+- **Cung Tài Bạch tại ${tai?.chi} (${formatStars(tai)})**:
+  • ${taiAnalysisText}
+  • Năng lực điều tiết tài chính: Nên ưu tiên đầu tư vào giá trị thực, nâng cao năng lực bản thân và các tài sản có tính thanh khoản cao.
+- **Cung Điền Trạch (Nhà cửa, Đất đai)**:
+  • ${dienText}
+
+### 4. ❤️ TÌNH DUYÊN, GIA ĐẠO & CON CÁI (CUNG PHU THÊ - TỬ TỨC)
+- **Cung Phu Thê tại ${the?.chi} (${formatStars(the)})**:
+  • ${theAnalysisText}
+  • Vợ chồng đồng lòng sẽ biến nghịch cảnh thành cơ hội phát triển. Nên kết hôn khi tư tưởng và kinh tế đã vững vàng.
+- **Cung Tử Tức tại ${tuTuc?.chi} (${formatStars(tuTuc)})**:
+  • Đường con cái sau này thông minh, hiếu thảo, biết tự lập và là niềm tự hào của cha mẹ.
+
+### 5. 🔮 VẬN HẠN NĂM ${viewYearCanChi} & LỜI KHUYÊN HÓA GIẢI
+- **Dự báo vận trình năm ${viewYear}**:
+  • Thời cơ để củng cố nền tảng, thiết lập các mục tiêu trọng tâm trong công việc và học tập.
+  • Cần chú ý cân bằng giữa làm việc và nghỉ ngơi, giữ gìn sức khỏe, cẩn trọng khi thực hiện các giao dịch giấy tờ lớn.
+- **Phương châm tu dưỡng & Kích hoạt Phước Đức**:
+  • *"Tâm an vạn sự thái, Đức dày phước tự sinh"* — Luôn giữ gìn sự chính trực, gieo nhiều hạt giống thiện lành và tương trợ mọi người xung quanh để mở rộng vận khí hanh thông trường cửu.`;
+}
+
+/**
+ * Trả lời thông minh khi trò chuyện với Chatbot Thầy Tử Vi
+ */
 export async function askTuViChatbot(chartData, messageHistory, newMessage, apiKey = "") {
   const key = (apiKey || "").trim();
 
   if (key.length > 10) {
     const genAI = new GoogleGenerativeAI(key);
     
-    // Tạo prompt chứa toàn bộ bối cảnh lá số và lịch sử
     const systemContext = `Bạn là Thầy Tử Vi uyên bác, am tường Huyền Học Đông Phương và Tử Vi Đẩu Số Toàn Thư.
 Đang tư vấn trực tiếp cho đương số:
 - Họ tên: ${chartData.info.name}
-- Năm sinh: ${chartData.info.canChiYear} (Nạp âm: ${chartData.info.nguHanh})
+- Giới tính: ${chartData.info.gender} (${chartData.info.amDuongGender})
+- Năm sinh: ${chartData.info.canChiYear} (Bản Mệnh: ${chartData.info.nguHanh})
 - Cục: ${chartData.info.cucName}
 - Cung Mệnh tại: ${chartData.info.cungMenhChi}
 - Cung Thân tại: ${chartData.info.cungThanChi}
 - Chủ Mệnh: ${chartData.info.chuMenh}, Chủ Thân: ${chartData.info.chuThan}
 - Năm xem vận hạn: ${chartData.info.viewYear}
 
+Chi tiết các cung vị của đương số:
+${chartData.cungList.map(c => `- Cung ${c.cungTen} (${c.chi}): Chính tinh [${c.chinhTinh.map(s => s.name).join(', ') || 'Vô chính diệu'}], Cát tinh [${c.catTinh.map(s => s.name).join(', ')}], Hung tinh [${c.hungTinh.map(s => s.name).join(', ')}]`).join('\n')}
+
 Lịch sử trao đổi gần nhất:
 ${messageHistory.slice(-4).map(m => `${m.sender === 'user' ? 'Người hỏi' : 'Thầy Tử Vi'}: ${m.text}`).join('\n')}
 
 Câu hỏi mới của người xem: "${newMessage}"
 
-Hãy trả lời bằng tiếng Việt, văn phong điềm đạm, uyên bác, ân cần, giải thích cặn kẽ dựa trên lý luận ngũ hành, sao chiếu và cung vị của đương số.`;
+Hãy trả lời bằng tiếng Việt, văn phong điềm đạm, uyên bác, ân cần, giải thích cặn kẽ dựa trên lý luận ngũ hành, sao chiếu và cung vị thực tế của đương số.`;
 
     for (const modelName of CANDIDATE_MODELS) {
       try {
@@ -116,81 +325,45 @@ Hãy trả lời bằng tiếng Việt, văn phong điềm đạm, uyên bác, �
     }
   }
 
-  // Chế độ phản hồi thông minh nội bộ
-  return generateLocalChatResponse(chartData, newMessage);
+  // Chế độ phản hồi thông minh nội bộ dựa trên lá số thực tế
+  return generateDynamicLocalChatResponse(chartData, newMessage);
 }
 
-function generateExpertLocalInterpretation(chartData) {
-  const info = chartData.info;
-  const menh = chartData.cungList.find(c => c.isMenh);
-  const than = chartData.cungList.find(c => c.isThan);
-  const quan = chartData.cungList.find(c => c.cungTen === "Quan Lộc");
-  const tai = chartData.cungList.find(c => c.cungTen === "Tài Bạch");
-  const the = chartData.cungList.find(c => c.cungTen === "Phu Thê");
-  const phuc = chartData.cungList.find(c => c.cungTen === "Phúc Đức");
-  const dien = chartData.cungList.find(c => c.cungTen === "Điền Trạch");
-  const tat = chartData.cungList.find(c => c.cungTen === "Tật Ách");
-  const di = chartData.cungList.find(c => c.cungTen === "Thiên Di");
-
-  const menhChinh = menh?.chinhTinh.map(s => `${s.name} (${s.dacTinh || 'Bình'})`).join(" & ") || "Vô Chính Diệu (mượn sao cung chiếu)";
-  const quanChinh = quan?.chinhTinh.map(s => `${s.name} (${s.dacTinh || 'Bình'})`).join(" & ") || "Vô Chính Diệu";
-  const taiChinh = tai?.chinhTinh.map(s => `${s.name} (${s.dacTinh || 'Bình'})`).join(" & ") || "Đắc Cát Tinh Tụ Hội";
-  const theChinh = the?.chinhTinh.map(s => `${s.name} (${s.dacTinh || 'Bình'})`).join(" & ") || "Vô Chính Diệu";
-  const dienChinh = dien?.chinhTinh.map(s => `${s.name} (${s.dacTinh || 'Bình'})`).join(" & ") || "Vô Chính Diệu";
-
-  return `### 1. 🌟 TỔNG QUAN BẢN MỆNH, CỐT CÁCH & THỜI VẬN
-- **Mệnh & Cục tương phối**: Đương số tuổi **${info.canChiYear}**, nạp âm **${info.nguHanh}**, sinh vào Cục **${info.cucName}**. Ngũ hành Mệnh và Cục tương sinh hỗ trợ, tạo nên một cơ địa bền bỉ, nội lực tiềm tàng và tính khí dẻo dai. Dù đối mặt với sóng gió hay biến động lớn của thời cuộc, bạn luôn giữ được sự tỉnh táo, điềm tĩnh để vượt qua thử thách và lội ngược dòng ngoạn mục.
-- **Cung Mệnh tại ${info.cungMenhChi} (${menhChinh})**: 
-  • Tọa thủ bộ đôi cát tinh miếu vượng: *Thiên Đồng* (phúc tinh nhân hậu, cởi mở, có trực giác nhạy bén) kết hợp cùng *Thiên Lương* (ấm tinh, thọ tinh, đóng vai trò như cây cao bóng cả che chở người khác, có khí chất của người thầy, người cố vấn uy tín).
-  • **Hội chiếu Cát tinh**: Được *Tả Phù, Hữu Bật, Văn Khúc, Thiên Hỷ* đồng triều, thể hiện đương số là người có học thức, khiếu thẩm mỹ, ăn nói có duyên và luôn có quý nhân trợ lực mọi lúc gặp khó khăn.
-- **Cung Thân cư ${info.cungThanChi} (tại ${than?.cungTen || 'Tài Bạch'})**: Sau tuổi 30, đương số hướng trọn tâm huyết vào việc xây dựng nền tảng tài chính, phát triển sự nghiệp thực tiễn và tạo dựng giá trị bền vững cho gia đình.
-
-### 2. 💼 SỰ NGHIỆP, CÔNG DANH & DANH VỊ (CUNG QUAN LỘC)
-- **Tọa cung tại ${quan?.chi || 'Ngọ'} (${quanChinh})**:
-  • Ngôi sao mưu lược *Thiên Cơ (Miếu)* đóng tại Quan Lộc biểu thị tư duy chiến lược đỉnh cao, khả năng lập kế hoạch xuất sắc, tính toán nhanh nhạy và thích nghi hoàn hảo trong môi trường công nghệ, kinh doanh hoặc hoạch định tổ chức.
-  • Có *Đào Hoa, Phi Liêm* hội chiếu: Công việc luôn có sự đổi mới, sáng tạo, dễ tạo dựng được sức hút và thương hiệu cá nhân trong mắt cấp trên, đối tác và cộng đồng.
-- **Lộ trình phát triển & Thăng tiến**:
-  • *Giai đoạn 20 - 28 tuổi*: Thời kỳ tích lũy trải nghiệm, học hỏi chuyên môn và mở rộng các mối quan hệ xã hội.
-  • *Giai đoạn 29 - 38 tuổi*: Bước vào thời kỳ hoàng kim bứt phá mạnh mẽ, đạt được vị thế quản lý hoặc tự chủ cơ sở kinh doanh, công ty riêng.
-  • **Lĩnh vực đắc địa nhất**: Công nghệ thông tin, Chuyển đổi số, Tài chính - Ngân hàng, Tư vấn chiến lược, Bất động sản cao cấp hoặc Thương mại quốc tế.
-
-### 3. 💰 TÀI BẠCH, TIỀN TÀI & TÍCH LŨY ĐIỀN SẢN (CUNG TÀI BẠCH - ĐIỀN TRẠCH)
-- **Cung Tài Bạch tại ${tai?.chi || 'Tuất'} (${taiChinh})**:
-  • Có *Thái Âm (Miếu)* tọa thủ cùng cát hóa cực phẩm **★ Hóa Khoa** và *Thanh Long*: Đây là cách cục *"Tài Phú Danh Vọng Song Toàn"*. Tiền bạc kiếm được xuất phát từ trí tuệ, năng lực chuyên môn và danh tiếng vững vàng, không phải tiền bạc may rủi chớp nhoáng.
-  • Khả năng kiểm soát dòng tiền rất chặt chẽ, tư duy phân bổ vốn bài bản, biết nhìn xa trông rộng.
-- **Cung Điền Trạch (Nhà cửa, Đất đai)**:
-  • Cung Điền đắc *Hỷ Thần, Thiên Việt, Thiên Mã*: Về trung và hậu vận sẽ sở hữu nhiều bất động sản, cơ ngơi khang trang, nhà đất gia tăng giá trị theo thời gian.
-  • **Lời khuyên tài chính**: Tập trung tích lũy tài sản thực (bất động sản, cổ phiếu công nghệ cốt lõi), tránh đầu cơ lướt sóng biến động ngắn hạn.
-
-### 4. ❤️ TÌNH DUYÊN, GIA ĐẠO & CON CÁI (CUNG PHU THÊ - TỬ TỨC)
-- **Cung Phu Thê tại ${the?.chi || 'Tý'} (${theChinh})**:
-  • Tọa thủ *Cự Môn (Vượng)* đồng cung với quyền tinh **★ Hóa Quyền**, *Lộc Tồn, Bác Sỹ, Văn Xương*: Người bạn đời là người có tài ăn nói, thông minh, quyết đoán, có năng lực quản trị xuất sắc và là hậu phương vững chắc cho sự nghiệp của đương số.
-  • *Gặp Triệt Không*: Duyên phận tiền vận có thể trải qua đôi chút trắc trở hoặc thử thách để cả hai thấu hiểu và gắn kết keo sơn hơn. Nên kết hôn sau 26 tuổi để đón nhận trọn vẹn sự viên mãn, vợ chồng đồng lòng tát biển Đông cũng cạn.
-- **Cung Tử Tức**:
-  • Con cái sau này thông minh, khôi ngô, sớm tự lập và có chí hướng lớn, làm rạng danh dòng tộc.
-
-### 5. 🔮 VẬN TRÌNH NĂM ${info.viewYear} & LỜI KHUYÊN HÓA GIẢI PHONG THỦY
-- **Tổng quan năm ${info.viewYear}**:
-  • Thời cơ thuận lợi để mở rộng quy mô công việc, triển khai các dự án công nghệ hoặc hợp tác kinh doanh mới. Quý nhân phương xa sẵn sàng nâng đỡ và tạo điều kiện phát triển.
-  • **Lưu ý**: Đề phòng một số hung tinh chiếu nhẹ có thể gây hiểu lầm trong giao tiếp hoặc hao tài nhỏ do mua sắm tiện nghi. Cần kiểm tra kỹ các điều khoản hợp đồng trước khi ký kết.
-- **Phương châm tu dưỡng & Kích hoạt Phúc Khí**:
-  • *"Tâm an thì vạn sự an, Đức dày thì phước lộc tự khắc tụ"* — Luôn giữ chữ Tín hàng đầu, thường xuyên hành thiện tích đức, nâng đỡ cấp dưới và chia sẻ giá trị cho cộng đồng để duy trì nguồn năng lượng hanh thông trường tồn.`;
-}
-
-
-function generateLocalChatResponse(chartData, question) {
+function generateDynamicLocalChatResponse(chartData, question) {
   const q = question.toLowerCase();
+  const info = chartData.info;
+  const cungList = chartData.cungList;
+
+  const getCung = (name) => cungList.find(c => c.cungTen === name);
+
   if (q.includes("tiền") || q.includes("tài") || q.includes("giàu") || q.includes("đầu tư") || q.includes("kinh doanh")) {
-    return `Về phương diện Tài Lộc & Tiền Bạc: Cung Tài Bạch của bạn tuổi ${chartData.info.canChiYear} (${chartData.info.nguHanh}) có nguồn tài khí ổn định. Bạn hợp với các nguồn đầu tư giá trị thực tế, trung và dài hạn. Nên hạn chế đầu cơ lướt sóng may rủi để tránh hao tài khố.`;
+    const tai = getCung("Tài Bạch");
+    const stars = tai?.chinhTinh.map(s => s.name).join(", ") || "Vô chính diệu";
+    return `Về đường Tài Lộc: Cung Tài Bạch của đương số **${info.name}** ngụ tại cung **${tai?.chi}** với các sao **${stars}**. Cát tinh hội tụ mang lại cơ hội tích lũy vững chắc theo thời gian. Bạn nên ưu tiên đầu tư vào năng lực chuyên môn thực tế và giữ vững kỷ luật tài chính, tránh tâm lý đầu cơ ngắn hạn.`;
   }
+
   if (q.includes("tình duyên") || q.includes("vợ") || q.includes("chồng") || q.includes("kết hôn") || q.includes("người yêu") || q.includes("duyên")) {
-    return `Về đường Duyên Phận & Hôn Nhân: Cung Phu Thê của bạn cho thấy bạn đời là người có cá tính, tự lập và hiểu biết. Nếu kết duyên chín chắn sau 26 tuổi thì vợ chồng cùng gây dựng cơ đồ rất vững bền, gia đạo an vui.`;
+    const the = getCung("Phu Thê");
+    const stars = the?.chinhTinh.map(s => s.name).join(", ") || "Vô chính diệu";
+    return `Về đường Tình Duyên & Hôn Nhân: Cung Phu Thê tại **${the?.chi}** (chính tinh: **${stars}**) cho thấy người bạn đời là người có cá tính, tự lập và có năng lực. Để hôn nhân bền vững viên mãn, hai bạn nên học cách lắng nghe, nhường nhịn và đồng lòng chia sẻ các mục tiêu dài hạn.`;
   }
+
   if (q.includes("nghề") || q.includes("công việc") || q.includes("sự nghiệp") || q.includes("quan lộc") || q.includes("học")) {
-    return `Về đường Công Danh & Sự Nghiệp: Cung Quan Lộc của bạn rất hợp các lĩnh vực đòi hỏi chuyên môn cao như Công Nghệ, Kỹ Thuật, Quản Lý, Sáng Tạo và Hoạch Định Chiến Lược. Càng tích lũy kiến thức sâu rộng thì vị thế của bạn càng được khẳng định.`;
+    const quan = getCung("Quan Lộc");
+    const stars = quan?.chinhTinh.map(s => s.name).join(", ") || "Vô chính diệu";
+    return `Về đường Công Danh & Sự Nghiệp: Cung Quan Lộc của bạn tại **${quan?.chi}** (chính tinh: **${stars}**). Bạn rất có duyên với các lĩnh vực đòi hỏi chuyên môn cao, tính sáng tạo và khả năng giải quyết vấn đề độc lập. Càng rèn luyện tay nghề và xây dựng uy tín cá nhân, vị thế của bạn càng được khẳng định.`;
   }
+
+  if (q.includes("sức khỏe") || q.includes("bệnh") || q.includes("tật")) {
+    const tat = getCung("Tật Ách");
+    return `Về phương diện Sức Khỏe: Cung Tật Ách tại **${tat?.chi}** nhắc nhở bạn nên duy trì chế độ sinh hoạt điều độ, chú ý chăm sóc hệ tiêu hóa và hệ thần kinh khi làm việc căng thẳng. Thường xuyên vận động thể thao và giữ tâm thái an nhiên là phương thuốc dưỡng sinh tốt nhất.`;
+  }
+
   if (q.includes("hạn") || q.includes("năm nay") || q.includes("2026") || q.includes("tai ương")) {
-    return `Vận hạn năm ${chartData.info.viewYear}: Năm nay là năm khởi đầu nhiều dự định mới. Bạn cần lưu ý cân bằng giữa công việc và nghỉ ngơi, cẩn trọng khi ký kết hợp đồng pháp lý vào các tháng giữa năm. Luôn giữ tâm thế bình tĩnh thì mọi sự ắt hanh thông.`;
+    return `Vận hạn năm ${info.viewYear}: Năm ${info.viewYearCanChi} là thời điểm tốt để mở mang kiến thức, củng cố nội lực và chuẩn bị cho các bước tiến lớn. Hãy thận trọng trong các quyết định ký kết hợp đồng và luôn giữ tâm đức thiện lành, mọi việc ắt sẽ chuyển nguy thành an.`;
   }
-  return `Theo lý số Tử Vi của bạn (${chartData.info.name}, mệnh ${chartData.info.nguHanh}, Cung Mệnh ngụ tại ${chartData.info.cungMenhChi}): Vận trình cuộc đời phụ thuộc vào Thiên Thời - Địa Lợi - Nhân Hòa. Hãy phát huy tối đa năng lực tư duy độc lập và gieo nhiều nhân lành, mọi điều tốt đẹp ắt sẽ hội tụ!`;
+
+  const menh = cungList.find(c => c.isMenh);
+  const menhStars = menh?.chinhTinh.map(s => s.name).join(", ") || "Vô chính diệu";
+  return `Theo lý số Tử Vi của đương số **${info.name}** (tuổi ${info.canChiYear}, mệnh ${info.nguHanh}, Cung Mệnh tại ${info.cungMenhChi} thủ sao **${menhStars}**): Vận mệnh nằm trong tay người biết nỗ lực và tu dưỡng. Khi bạn thấu hiểu bản thân và hành động đúng thời cơ, vạn sự lành ắt sẽ tự tìm đến!`;
 }

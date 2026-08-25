@@ -68,7 +68,7 @@ export default function InputForm({
                 className="warm-input"
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="VD: Đinh Quốc Việt"
+                placeholder="VD: Nguyễn Thị Nga Quỳnh"
               />
             </div>
 

@@ -44,6 +44,28 @@ body {
   box-shadow: 0 2px 8px -2px rgba(92, 70, 43, 0.04), 0 1px 3px -1px rgba(92, 70, 43, 0.02);
 }
 
+@keyframes shimmerWave {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+.shimmer-wave {
+  background: linear-gradient(
+    90deg,
+    #f2ebd9 0%,
+    #faf6ee 40%,
+    #ffffff 50%,
+    #faf6ee 60%,
+    #f2ebd9 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmerWave 2s infinite ease-in-out;
+}
+
 .warm-card-hover {
   transition: all 0.2s ease;
 }

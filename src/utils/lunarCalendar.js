@@ -143,7 +143,7 @@ function getLeapMonthOffset(a11, timeZone = 7) {
 export const CAN = ["Giáp", "Ất", "Bính", "Đinh", "Mậu", "Kỷ", "Canh", "Tân", "Nhâm", "Quý"];
 export const CHI = ["Tý", "Sửu", "Dần", "Mão", "Thìn", "Tỵ", "Ngọ", "Mùi", "Thân", "Dậu", "Tuất", "Hợi"];
 export const GIO_CHI = [
-  "Tý (23h-01h - tính sang ngày hôm sau)",
+  "Tý (23h-01h)",
   "Sửu (01h-03h)",
   "Dần (03h-05h)",
   "Mão (05h-07h)",
