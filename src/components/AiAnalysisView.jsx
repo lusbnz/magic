@@ -117,19 +117,28 @@ export default function AiAnalysisView({ analysisText, selectedCung }) {
               {/* Nội dung diễn giải */}
               <div className="space-y-2 text-[#332b22] text-[13px] leading-relaxed">
                 {sec.content.split('\n').filter(Boolean).map((paragraph, pIdx) => {
-                  const isBullet = paragraph.trim().startsWith('-');
-                  const cleanText = isBullet ? paragraph.trim().substring(1).trim() : paragraph.trim();
-                  const parts = cleanText.split(/(\*\*.*?\*\*)/g);
+                  // Xóa các tiền tố bullet thừa như "- ", "* ", "• " ở đầu dòng
+                  let cleanText = paragraph.trim().replace(/^[-*•]\s*/, '').trim();
+                  
+                  // Tách các đoạn in đậm **text** hoặc *text*
+                  const parts = cleanText.split(/(\*\*.*?\*\*|\*[^*]+?\*)/g);
 
                   return (
                     <div key={pIdx} className="flex items-start gap-2">
                       <div className="w-1.5 h-1.5 rounded-full bg-[#c48b4d] mt-1.5 flex-shrink-0" />
                       <p className="flex-1 leading-relaxed">
                         {parts.map((part, partIdx) => {
-                          if (part.startsWith('**') && part.endsWith('**')) {
+                          if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
                             return (
-                              <strong key={partIdx} className="font-extrabold text-[#1a1510] text-[#c48b4d]/95 font-medium">
+                              <strong key={partIdx} className="font-extrabold text-[#c48b4d]">
                                 {part.slice(2, -2)}
+                              </strong>
+                            );
+                          }
+                          if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+                            return (
+                              <strong key={partIdx} className="font-bold text-[#b45309]">
+                                {part.slice(1, -1)}
                               </strong>
                             );
                           }

@@ -128,17 +128,32 @@ export function calculateCanLuong(yearCanChi, lunarMonth, lunarDay, hourChiIndex
 }
 
 export function createTuViChart({ name, gender, solarDay, solarMonth, solarYear, hourChiIndex, viewYear = 2026 }) {
+  // Trong thuật số Tử Vi & Can Chi truyền thống:
+  // Giờ Tý bắt đầu từ 23h00 đêm hôm trước đến 01h00 sáng hôm sau.
+  // Khi sinh vào khoảng 23h - 24h (Giờ Tý), ngày tính Can Chi và Âm lịch được chuyển sang ngày hôm sau.
+  let effSolarDay = parseInt(solarDay);
+  let effSolarMonth = parseInt(solarMonth);
+  let effSolarYear = parseInt(solarYear);
+
+  if (hourChiIndex === 0) {
+    // Chuyển sang ngày dương lịch kế tiếp
+    const nextDate = new Date(effSolarYear, effSolarMonth - 1, effSolarDay + 1);
+    effSolarDay = nextDate.getDate();
+    effSolarMonth = nextDate.getMonth() + 1;
+    effSolarYear = nextDate.getFullYear();
+  }
+
   const [lunarDay, lunarMonth, lunarYear, isLeap] = convertSolar2Lunar(
-    parseInt(solarDay),
-    parseInt(solarMonth),
-    parseInt(solarYear)
+    effSolarDay,
+    effSolarMonth,
+    effSolarYear
   );
 
   const canChiYear = getCanChiYear(lunarYear);
   const canChiMonth = getCanChiMonth(lunarMonth, lunarYear);
-  const jd = jdFromDate(parseInt(solarDay), parseInt(solarMonth), parseInt(solarYear));
+  const jd = jdFromDate(effSolarDay, effSolarMonth, effSolarYear);
   const canIndex = (jd + 9) % 10;
-  const canChiDay = getCanChiDay(parseInt(solarDay), parseInt(solarMonth), parseInt(solarYear));
+  const canChiDay = getCanChiDay(effSolarDay, effSolarMonth, effSolarYear);
   const canChiHour = getCanChiHour(hourChiIndex, canIndex);
   const nguHanh = getNguHanh(canChiYear);
 
@@ -517,7 +532,9 @@ export function createTuViChart({ name, gender, solarDay, solarMonth, solarYear,
       name,
       gender: isMale ? "Nam mạng" : "Nữ mạng",
       amDuongGender,
-      solarDate: `${solarDay}/${solarMonth}/${solarYear}`,
+      solarDate: hourChiIndex === 0 
+        ? `${solarDay}/${solarMonth}/${solarYear} (Tính ngày ${effSolarDay}/${effSolarMonth}/${effSolarYear})` 
+        : `${solarDay}/${solarMonth}/${solarYear}`,
       lunarDate: `${lunarDay}/${lunarMonth}/${lunarYear}${isLeap ? " (Nhuận)" : ""}`,
       canChiYear,
       canChiMonth,

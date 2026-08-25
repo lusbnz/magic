@@ -1,18 +1,17 @@
 import React, { useState } from 'react';
-import { Calendar, User, Clock, Sparkles, Key, ArrowRight, ShieldCheck } from 'lucide-react';
+import { Calendar, User, Clock, Sparkles, Key, ArrowRight, ShieldCheck, History } from 'lucide-react';
 import { GIO_CHI } from '../utils/lunarCalendar';
 
-export default function InputForm({ onSubmit, loading, apiKey, setApiKey }) {
-  const [formData, setFormData] = useState({
-    name: 'Đinh Quốc Việt',
-    gender: 'nam',
-    solarDay: 6,
-    solarMonth: 12,
-    solarYear: 2003,
-    hourChiIndex: 10, // Tuất (19h-21h)
-    viewYear: 2026
-  });
-
+export default function InputForm({ 
+  formData, 
+  setFormData, 
+  onSubmit, 
+  loading, 
+  apiKey, 
+  setApiKey,
+  onOpenHistory,
+  historyCount = 0
+}) {
   const [showApiKeyInput, setShowApiKeyInput] = useState(false);
 
   const handleSubmit = (e) => {
@@ -24,8 +23,8 @@ export default function InputForm({ onSubmit, loading, apiKey, setApiKey }) {
     <div className="max-w-2xl mx-auto">
       <div className="warm-card p-6 md:p-8 bg-[#ffffff]">
         {/* Header */}
-        <div className="mb-6 border-b border-[#f0ece1] pb-5">
-          <div className="flex items-center gap-3 mb-2">
+        <div className="mb-6 border-b border-[#f0ece1] pb-5 flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <div className="w-8 h-8 rounded-lg bg-[#fef7ee] border border-[#fbd38d] text-[#c48b4d] flex items-center justify-center font-bold">
               <Sparkles className="w-4 h-4 text-[#c48b4d]" />
             </div>
@@ -38,6 +37,22 @@ export default function InputForm({ onSubmit, loading, apiKey, setApiKey }) {
               </p>
             </div>
           </div>
+
+          {onOpenHistory && (
+            <button
+              type="button"
+              onClick={onOpenHistory}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#fcfbf9] hover:bg-[#fef7ee] text-[#786d5e] hover:text-[#c48b4d] border border-[#e8e3d7] hover:border-[#fbd38d] text-xs font-semibold transition-all cursor-pointer shadow-2xs"
+            >
+              <History className="w-3.5 h-3.5" />
+              <span>Hồ sơ đã lưu</span>
+              {historyCount > 0 && (
+                <span className="w-4 h-4 rounded-full bg-[#c48b4d] text-white text-[10px] flex items-center justify-center font-bold ml-0.5">
+                  {historyCount}
+                </span>
+              )}
+            </button>
+          )}
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">

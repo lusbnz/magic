@@ -142,7 +142,20 @@ function getLeapMonthOffset(a11, timeZone = 7) {
 
 export const CAN = ["Giáp", "Ất", "Bính", "Đinh", "Mậu", "Kỷ", "Canh", "Tân", "Nhâm", "Quý"];
 export const CHI = ["Tý", "Sửu", "Dần", "Mão", "Thìn", "Tỵ", "Ngọ", "Mùi", "Thân", "Dậu", "Tuất", "Hợi"];
-export const GIO_CHI = ["Tý (23h-01h)", "Sửu (01h-03h)", "Dần (03h-05h)", "Mão (05h-07h)", "Thìn (07h-09h)", "Tỵ (09h-11h)", "Ngọ (11h-13h)", "Mùi (13h-15h)", "Thân (15h-17h)", "Dậu (17h-19h)", "Tuất (19h-21h)", "Hợi (21h-23h)"];
+export const GIO_CHI = [
+  "Tý (23h-01h - tính sang ngày hôm sau)",
+  "Sửu (01h-03h)",
+  "Dần (03h-05h)",
+  "Mão (05h-07h)",
+  "Thìn (07h-09h)",
+  "Tỵ (09h-11h)",
+  "Ngọ (11h-13h)",
+  "Mùi (13h-15h)",
+  "Thân (15h-17h)",
+  "Dậu (17h-19h)",
+  "Tuất (19h-21h)",
+  "Hợi (21h-23h)"
+];
 
 export function getCanChiYear(year) {
   let canIndex = (year + 6) % 10;

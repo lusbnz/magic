@@ -1,29 +1,63 @@
-import React, { useState } from 'react';
-import { Sparkles, RefreshCw, Compass } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Sparkles, RefreshCw, Compass, History } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 import InputForm from './components/InputForm';
 import TuViBoard from './components/TuViBoard';
 import AiAnalysisView from './components/AiAnalysisView';
+import HistorySidebar from './components/HistorySidebar';
 
 import { createTuViChart } from './utils/tuViEngine';
 import { analyzeTuViWithAI } from './services/aiService';
+import { getAllProfiles, saveProfile, deleteProfile, clearAllProfiles } from './utils/historyDb';
 
 export default function App() {
+  const [formData, setFormData] = useState({
+    name: 'Đinh Quốc Việt',
+    gender: 'nam',
+    solarDay: 6,
+    solarMonth: 12,
+    solarYear: 2003,
+    hourChiIndex: 10, // Tuất (19h-21h)
+    viewYear: 2026
+  });
+
   const [chartData, setChartData] = useState(null);
   const [analysisText, setAnalysisText] = useState('');
   const [loading, setLoading] = useState(false);
   const [apiKey, setApiKey] = useState('');
   const [selectedCungIndex, setSelectedCungIndex] = useState(null);
 
-  const handleGenerateChart = async (formData) => {
+  // History Sidebar state
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [savedProfiles, setSavedProfiles] = useState([]);
+
+  const loadHistoryProfiles = async () => {
+    try {
+      const list = await getAllProfiles();
+      setSavedProfiles(list);
+    } catch (err) {
+      console.error('Failed to load history:', err);
+    }
+  };
+
+  useEffect(() => {
+    loadHistoryProfiles();
+  }, []);
+
+  const handleGenerateChart = async (dataToSubmit) => {
+    const data = dataToSubmit || formData;
     setLoading(true);
     setChartData(null);
     setAnalysisText('');
 
     try {
-      // 1. Tạo bàn lá số theo thuật toán
-      const chart = createTuViChart(formData);
+      // 1. Tự động lưu thông tin form vào IndexedDB
+      await saveProfile(data);
+      await loadHistoryProfiles();
+
+      // 2. Tạo bàn lá số theo thuật toán
+      const chart = createTuViChart(data);
       setChartData(chart);
       setSelectedCungIndex(chart.menhPos);
 
@@ -35,7 +69,7 @@ export default function App() {
         colors: ['#c48b4d', '#f59e0b', '#d97706', '#fef3c7']
       });
 
-      // 2. Gọi AI luận giải
+      // 3. Gọi AI luận giải
       const aiResult = await analyzeTuViWithAI(chart, apiKey);
       setAnalysisText(aiResult);
     } catch (err) {
@@ -43,6 +77,36 @@ export default function App() {
       alert("Đã xảy ra lỗi khi tạo lá số. Xin vui lòng kiểm tra lại thông tin!");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSelectProfileFromHistory = (profile) => {
+    setFormData({
+      name: profile.name,
+      gender: profile.gender,
+      solarDay: profile.solarDay,
+      solarMonth: profile.solarMonth,
+      solarYear: profile.solarYear,
+      hourChiIndex: profile.hourChiIndex,
+      viewYear: profile.viewYear
+    });
+    // Nếu đang ở màn hình lá số, chuyển về form để xem hoặc cho phép bấm xem
+    if (chartData) {
+      setChartData(null);
+      setAnalysisText('');
+      setSelectedCungIndex(null);
+    }
+  };
+
+  const handleDeleteProfile = async (id) => {
+    await deleteProfile(id);
+    await loadHistoryProfiles();
+  };
+
+  const handleClearAllProfiles = async () => {
+    if (window.confirm('Bạn có chắc chắn muốn xóa toàn bộ lịch sử các lá số đã lưu?')) {
+      await clearAllProfiles();
+      await loadHistoryProfiles();
     }
   };
 
@@ -71,16 +135,35 @@ export default function App() {
           </div>
 
           <div className="flex items-center gap-3">
-            <span className="text-xs text-[#786d5e] hidden sm:inline-block">
-              Hệ thống an sao & hỏi đáp AI tức thì
-            </span>
+            <button
+              onClick={() => setIsHistoryOpen(true)}
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#faf7f0] hover:bg-[#fef7ee] text-[#5e5343] hover:text-[#c48b4d] border border-[#e8e3d7] hover:border-[#fbd38d] text-xs font-semibold transition-all cursor-pointer shadow-2xs"
+            >
+              <History className="w-3.5 h-3.5 text-[#c48b4d]" />
+              <span className="hidden xs:inline">Hồ sơ đã xem</span>
+              {savedProfiles.length > 0 && (
+                <span className="w-4 h-4 rounded-full bg-[#c48b4d] text-white text-[10px] flex items-center justify-center font-bold">
+                  {savedProfiles.length}
+                </span>
+              )}
+            </button>
             <div className="h-4 w-[1px] bg-[#e8e3d7] hidden sm:block"></div>
-            <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-[#fef7ee] text-[#c48b4d] border border-[#fbd38d] font-semibold">
+            <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-[#fef7ee] text-[#c48b4d] border border-[#fbd38d] font-semibold hidden sm:inline-block">
               Warm Aesthetic
             </span>
           </div>
         </div>
       </nav>
+
+      {/* History Sidebar */}
+      <HistorySidebar
+        isOpen={isHistoryOpen}
+        onClose={() => setIsHistoryOpen(false)}
+        profiles={savedProfiles}
+        onSelectProfile={handleSelectProfileFromHistory}
+        onDeleteProfile={handleDeleteProfile}
+        onClearAll={handleClearAllProfiles}
+      />
 
       {/* Main Container Full Width */}
       <div className="w-full px-4 sm:px-6 py-6 sm:py-7 flex-1">
@@ -97,10 +180,14 @@ export default function App() {
             </div>
 
             <InputForm
+              formData={formData}
+              setFormData={setFormData}
               onSubmit={handleGenerateChart}
               loading={loading}
               apiKey={apiKey}
               setApiKey={setApiKey}
+              onOpenHistory={() => setIsHistoryOpen(true)}
+              historyCount={savedProfiles.length}
             />
           </div>
         ) : (
@@ -118,12 +205,20 @@ export default function App() {
                 </span>
               </div>
 
-              <button
-                onClick={handleReset}
-                className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-[#f7f4ed] hover:bg-[#ede7da] text-[#2d261e] flex items-center gap-1.5 transition-colors border border-[#e8e3d7] cursor-pointer"
-              >
-                <RefreshCw className="w-3.5 h-3.5" /> Lập Lá Số Khác
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setIsHistoryOpen(true)}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-[#faf7f0] hover:bg-[#ede7da] text-[#5e5343] flex items-center gap-1.5 transition-colors border border-[#e8e3d7] cursor-pointer"
+                >
+                  <History className="w-3.5 h-3.5 text-[#c48b4d]" /> Hồ Sơ Đã Lưu
+                </button>
+                <button
+                  onClick={handleReset}
+                  className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-[#2d261e] hover:bg-[#453a2e] text-[#ffffff] flex items-center gap-1.5 transition-colors cursor-pointer shadow-xs"
+                >
+                  <RefreshCw className="w-3.5 h-3.5" /> Lập Lá Số Khác
+                </button>
+              </div>
             </div>
 
             {/* Layout 2 cột: Cột trái Bàn Lá Số 12 Cung, Cột phải Luận Giải Chi Tiết AI (Sidebar) */}
