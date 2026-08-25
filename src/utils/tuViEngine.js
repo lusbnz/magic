@@ -2,7 +2,7 @@
  * Thuật toán An Sao Tử Vi Đẩu Số Toàn Thư Đầy Đủ Chuyên Sâu (100+ Tinh Tú & Lưu Hạn L.)
  */
 
-import { convertSolar2Lunar, getCanChiYear, getCanChiMonth, getCanChiDay, getCanChiHour, getNguHanh, jdFromDate, jdToDate, CAN, CHI } from './lunarCalendar';
+import { convertSolar2Lunar, getCanChiYear, getCanChiMonth, getCanChiDay, getCanChiHour, getNguHanh, jdFromDate, jdToDate, CAN, CHI } from './lunarCalendar.js';
 
 export const CUNG_LIST = [
   "Mệnh", "Phụ Mẫu", "Phúc Đức", "Điền Trạch",
@@ -291,17 +291,23 @@ export function createTuViChart({ name, gender, solarDay, solarMonth, solarYear,
   }
 
   // 10. Tả Phù, Hữu Bật (theo Tháng)
-  cungStars[(4 + (lunarMonth - 1)) % 12].catTinh.push({ name: "Tả Phù", element: "Thổ" });
-  cungStars[(10 - (lunarMonth - 1) + 12) % 12].catTinh.push({ name: "Hữu Bật", element: "Thổ" });
+  const taPhuPos = (4 + (lunarMonth - 1)) % 12;
+  const huuBatPos = (10 - (lunarMonth - 1) + 12) % 12;
+  cungStars[taPhuPos].catTinh.push({ name: "Tả Phù", element: "Thổ" });
+  cungStars[huuBatPos].catTinh.push({ name: "Hữu Bật", element: "Thổ" });
 
   // 11. Văn Xương, Văn Khúc (theo Giờ)
-  cungStars[(10 - hourChiIndex + 12) % 12].catTinh.push({ name: "Văn Xương", element: "Kim", dacTinh: "H" });
-  cungStars[(4 + hourChiIndex) % 12].catTinh.push({ name: "Văn Khúc", element: "Thủy", dacTinh: "H" });
+  const vanXuongPos = (10 - hourChiIndex + 12) % 12;
+  const vanKhucPos = (4 + hourChiIndex) % 12;
+  const vanXuongDac = [4, 5, 11, 0, 1, 7].includes(vanXuongPos) ? "Đ" : "H";
+  const vanKhucDac = [4, 5, 11, 0, 1, 7].includes(vanKhucPos) ? "Đ" : "H";
+  cungStars[vanXuongPos].catTinh.push({ name: "Văn Xương", element: "Kim", dacTinh: vanXuongDac });
+  cungStars[vanKhucPos].catTinh.push({ name: "Văn Khúc", element: "Thủy", dacTinh: vanKhucDac });
 
   // 12. Thiên Khôi, Thiên Việt, Quốc Ấn, Đường Phù
   const khoiVietMap = {
     "Giáp": [1, 7], "Ất": [0, 8], "Bính": [11, 9], "Đinh": [11, 9],
-    "Mậu": [1, 7], "Kỷ": [0, 8], "Canh": [1, 7], "Tân": [6, 2],
+    "Mậu": [1, 7], "Kỷ": [0, 8], "Canh": [6, 2], "Tân": [6, 2],
     "Nhâm": [3, 5], "Quý": [3, 5]
   };
   const [khPos, viPos] = khoiVietMap[yearCan] || [1, 7];
@@ -311,81 +317,141 @@ export function createTuViChart({ name, gender, solarDay, solarMonth, solarYear,
   cungStars[(locTonPos + 7) % 12].catTinh.push({ name: "Đường Phù", element: "Mộc" });
 
   // 13. Địa Không, Địa Kiếp (theo Giờ)
-  cungStars[(11 - hourChiIndex + 12) % 12].hungTinh.push({ name: "Địa Không", element: "Hỏa", dacTinh: "H" });
-  cungStars[(11 + hourChiIndex) % 12].hungTinh.push({ name: "Địa Kiếp", element: "Hỏa", dacTinh: "H" });
+  const diaKhongPos = (11 - hourChiIndex + 12) % 12;
+  const diaKiepPos = (11 + hourChiIndex) % 12;
+  const khongKiepDac = (p) => [5, 11, 2, 8].includes(p) ? "Đ" : "H";
+  cungStars[diaKhongPos].hungTinh.push({ name: "Địa Không", element: "Hỏa", dacTinh: khongKiepDac(diaKhongPos) });
+  cungStars[diaKiepPos].hungTinh.push({ name: "Địa Kiếp", element: "Hỏa", dacTinh: khongKiepDac(diaKiepPos) });
 
-  // 14. Hỏa Tinh, Linh Tinh
-  const hoaLinhStart = (yearChiIndex % 4 === 2) ? [1, 3] : (yearChiIndex % 4 === 0) ? [2, 10] : [9, 10];
-  cungStars[(hoaLinhStart[0] + hourChiIndex) % 12].hungTinh.push({ name: "Hỏa Tinh", element: "Hỏa", dacTinh: "H" });
-  cungStars[(hoaLinhStart[1] - hourChiIndex + 12) % 12].hungTinh.push({ name: "Linh Tinh", element: "Hỏa", dacTinh: "H" });
+  // 14. Hỏa Tinh, Linh Tinh (Chuẩn truyền thống theo Dương Nam/Âm Nữ vs Âm Nam/Dương Nữ)
+  const hoaLinhStarts = {
+    2: [1, 3], 6: [1, 3], 10: [1, 3],  // Dần Ngọ Tuất: Hỏa Sửu, Linh Mão
+    8: [2, 10], 0: [2, 10], 4: [2, 10], // Thân Tý Thìn: Hỏa Dần, Linh Tuất
+    5: [3, 10], 9: [3, 10], 1: [3, 10], // Tỵ Dậu Sửu: Hỏa Mão, Linh Tuất
+    11: [9, 10], 3: [9, 10], 7: [9, 10] // Hợi Mão Mùi: Hỏa Dậu, Linh Tuất
+  };
+  const [hoaStart, linhStart] = hoaLinhStarts[yearChiIndex] || [2, 10];
+  const hoaPos = isDuongNamAmNu ? (hoaStart + hourChiIndex) % 12 : (hoaStart - hourChiIndex + 12 * 2) % 12;
+  const linhPos = isDuongNamAmNu ? (linhStart - hourChiIndex + 12 * 2) % 12 : (linhStart + hourChiIndex) % 12;
+  const hoaLinhDac = (p) => [2, 3, 4, 5, 6].includes(p) ? "Đ" : "H";
+  cungStars[hoaPos].hungTinh.push({ name: "Hỏa Tinh", element: "Hỏa", dacTinh: hoaLinhDac(hoaPos) });
+  cungStars[linhPos].hungTinh.push({ name: "Linh Tinh", element: "Hỏa", dacTinh: hoaLinhDac(linhPos) });
 
-  // 15. Thiên Mã, Đào Hoa, Hồng Loan, Thiên Hỷ, Hoa Cái, Phượng Các, Giải Thần, Long Trì
+  // 15. Thiên Mã, Đào Hoa, Hoa Cái, Kiếp Sát (Tam Hợp Cục)
   const maMap = { 2: 8, 6: 8, 10: 8, 8: 2, 0: 2, 4: 2, 5: 11, 9: 11, 1: 11, 11: 5, 3: 5, 7: 5 };
-  const maPos = maMap[yearChiIndex] ?? 8;
-  cungStars[maPos].catTinh.push({ name: "Thiên Mã", element: "Hỏa", dacTinh: "Đ" });
+  const daoHoaMap = { 2: 3, 6: 3, 10: 3, 8: 9, 0: 9, 4: 9, 5: 6, 9: 6, 1: 6, 11: 0, 3: 0, 7: 0 };
+  const hoaCaiMap = { 2: 10, 6: 10, 10: 10, 8: 4, 0: 4, 4: 4, 5: 1, 9: 1, 1: 1, 11: 7, 3: 7, 7: 7 };
+  const kiepSatMap = { 2: 11, 6: 11, 10: 11, 8: 5, 0: 5, 4: 5, 5: 2, 9: 2, 1: 2, 11: 8, 3: 8, 7: 8 };
 
-  const daoHoaPos = (maPos + 1) % 12;
+  const maPos = maMap[yearChiIndex] ?? 2;
+  const daoHoaPos = daoHoaMap[yearChiIndex] ?? 9;
+  const hoaCaiPos = hoaCaiMap[yearChiIndex] ?? 4;
+  const kiepSatPos = kiepSatMap[yearChiIndex] ?? 5;
+
+  cungStars[maPos].catTinh.push({ name: "Thiên Mã", element: "Hỏa", dacTinh: "Đ" });
+  cungStars[daoHoaPos].catTinh.push({ name: "Đào Hoa", element: "Mộc" });
+  cungStars[hoaCaiPos].catTinh.push({ name: "Hoa Cái", element: "Kim" });
+  cungStars[kiepSatPos].hungTinh.push({ name: "Kiếp Sát", element: "Hỏa" });
+
+  // Hồng Loan, Thiên Hỷ
   const hongLoanPos = (3 - yearChiIndex + 12) % 12;
   const thienHyPos = (hongLoanPos + 6) % 12;
-  cungStars[daoHoaPos].catTinh.push({ name: "Đào Hoa", element: "Mộc" });
   cungStars[hongLoanPos].catTinh.push({ name: "Hồng Loan", element: "Thủy" });
   cungStars[thienHyPos].catTinh.push({ name: "Thiên Hỷ", element: "Thủy" });
 
+  // Long Trì, Phượng Các, Giải Thần
   const longTriPos = (4 + yearChiIndex) % 12;
   const phuongCacPos = (10 - yearChiIndex + 12) % 12;
   cungStars[longTriPos].catTinh.push({ name: "Long Trì", element: "Thủy" });
   cungStars[phuongCacPos].catTinh.push({ name: "Phượng Các", element: "Thổ" });
   cungStars[phuongCacPos].catTinh.push({ name: "Giải Thần", element: "Mộc" });
-  cungStars[(4 + (yearChiIndex % 4) * 3 + 1) % 12].catTinh.push({ name: "Hoa Cái", element: "Kim" });
 
-  // 16. Phụ Tinh Chuyên Sâu (Lục Bại Tinh, Cô Thần, Quả Tú, Kiếp Sát, Thiên Hình, Thiên Diêu, Thiên Khốc, Thiên Hư...)
-  const coQuaMap = { 11: [2, 10], 0: [2, 10], 1: [2, 10], 2: [5, 1], 3: [5, 1], 4: [5, 1], 5: [8, 4], 6: [8, 4], 7: [8, 4], 8: [11, 7], 9: [11, 7], 10: [11, 7] };
-  const [coPos, quaPos] = coQuaMap[yearChiIndex] || [2, 10];
+  // Thai Phụ, Phong Cáo (Khởi từ Văn Khúc + 2 & Văn Xương + 2)
+  const thaiPhuPos = (vanKhucPos + 2) % 12;
+  const phongCaoPos = (vanXuongPos + 2) % 12;
+  cungStars[thaiPhuPos].catTinh.push({ name: "Thai Phụ", element: "Kim" });
+  cungStars[phongCaoPos].catTinh.push({ name: "Phong Cáo", element: "Thổ" });
+
+  // 16. Phụ Tinh Chuyên Sâu (Lục Bại Tinh, Cô Thần, Quả Tú, Thiên Hình, Thiên Diêu, Thiên Khốc, Thiên Hư...)
+  const coQuaMap = {
+    11: [2, 10], 0: [2, 10], 1: [2, 10], // Hợi Tý Sửu -> Dần, Tuất
+    2: [5, 1], 3: [5, 1], 4: [5, 1],    // Dần Mão Thìn -> Tỵ, Sửu
+    5: [8, 4], 6: [8, 4], 7: [8, 4],    // Tỵ Ngọ Mùi -> Thân, Thìn
+    8: [11, 7], 9: [11, 7], 10: [11, 7]  // Thân Dậu Tuất -> Hợi, Mùi
+  };
+  const [coPos, quaPos] = coQuaMap[yearChiIndex] || [11, 7];
   cungStars[coPos].hungTinh.push({ name: "Cô Thần", element: "Hỏa" });
   cungStars[quaPos].hungTinh.push({ name: "Quả Tú", element: "Thổ" });
 
-  const kiepSatMap = { 2: 5, 6: 5, 10: 5, 8: 11, 0: 11, 4: 11, 5: 8, 9: 8, 1: 8, 11: 2, 3: 2, 7: 2 };
-  cungStars[kiepSatMap[yearChiIndex] || 5].hungTinh.push({ name: "Kiếp Sát", element: "Hỏa" });
+  // Thiên Khốc, Thiên Hư
+  const khocPos = (6 - yearChiIndex + 12) % 12;
+  const huPos = (6 + yearChiIndex) % 12;
+  const khocHuDac = (p) => [0, 6, 3, 9].includes(p) ? "Đ" : "H";
+  cungStars[khocPos].hungTinh.push({ name: "Thiên Khốc", element: "Thủy", dacTinh: khocHuDac(khocPos) });
+  cungStars[huPos].hungTinh.push({ name: "Thiên Hư", element: "Thủy", dacTinh: khocHuDac(huPos) });
 
-  const khocHuMap = { 0: [6, 6], 1: [5, 7], 2: [4, 8], 3: [3, 9], 4: [2, 10], 5: [1, 11], 6: [0, 0], 7: [11, 1], 8: [10, 2], 9: [9, 3], 10: [8, 4], 11: [7, 5] };
-  const [khocPos, huPos] = khocHuMap[yearChiIndex] || [6, 6];
-  cungStars[khocPos].hungTinh.push({ name: "Thiên Khốc", element: "Thủy", dacTinh: "H" });
-  cungStars[huPos].hungTinh.push({ name: "Thiên Hư", element: "Thủy", dacTinh: "H" });
-
+  // Thiên Hình, Thiên Diêu, Thiên Y
   const thienHinhPos = (9 + (lunarMonth - 1)) % 12;
   const thienDieuPos = (1 + (lunarMonth - 1)) % 12;
   const thienYPos = (1 + (lunarMonth - 1)) % 12;
-  cungStars[thienHinhPos].hungTinh.push({ name: "Thiên Hình", element: "Hỏa", dacTinh: "H" });
-  cungStars[thienDieuPos].hungTinh.push({ name: "Thiên Diêu", element: "Thủy", dacTinh: "H" });
+  cungStars[thienHinhPos].hungTinh.push({ name: "Thiên Hình", element: "Hỏa", dacTinh: [2, 3, 8, 9].includes(thienHinhPos) ? "Đ" : "H" });
+  cungStars[thienDieuPos].hungTinh.push({ name: "Thiên Diêu", element: "Thủy", dacTinh: [2, 3, 8, 9].includes(thienDieuPos) ? "Đ" : "H" });
   cungStars[thienYPos].catTinh.push({ name: "Thiên Y", element: "Thủy" });
 
+  // Đẩu Quân
   const dauQuanPos = (yearChiIndex - (lunarMonth - 1) + hourChiIndex + 12 * 2) % 12;
   cungStars[dauQuanPos].catTinh.push({ name: "Đẩu Quân", element: "Hỏa" });
 
-  // Tam Thai, Bát Tọa, Ân Quang, Thiên Quý, Thiên Đức, Phúc Đức, Nguyệt Đức, Thiên Quan, Thiên Phúc, Thiên Thọ, Thiên Tài, Thiên Sứ, Thiên Thương, Thiên La, Địa Võng
-  const tamThaiPos = (4 + (lunarMonth - 1) + (lunarDay - 1)) % 12;
-  const batToaPos = (10 - (lunarMonth - 1) - (lunarDay - 1) + 12 * 5) % 12;
+  // Tam Thai, Bát Tọa (từ Tả Phù / Hữu Bật)
+  const tamThaiPos = (taPhuPos + (lunarDay - 1)) % 12;
+  const batToaPos = (huuBatPos - (lunarDay - 1) + 12 * 10) % 12;
   cungStars[tamThaiPos].catTinh.push({ name: "Tam Thai", element: "Thủy" });
   cungStars[batToaPos].catTinh.push({ name: "Bát Tọa", element: "Mộc" });
 
-  const anQuangPos = (10 - hourChiIndex + (lunarDay - 1) - 1 + 12 * 2) % 12;
-  const thienQuyPos = (4 + hourChiIndex - (lunarDay - 1) + 1 + 12 * 5) % 12;
+  // Ân Quang, Thiên Quý (từ Văn Xương / Văn Khúc)
+  const anQuangPos = (vanXuongPos + (lunarDay - 1) - 1 + 12 * 10) % 12;
+  const thienQuyPos = (vanKhucPos - (lunarDay - 1) + 1 + 12 * 10) % 12;
   cungStars[anQuangPos].catTinh.push({ name: "Ân Quang", element: "Mộc" });
   cungStars[thienQuyPos].catTinh.push({ name: "Thiên Quý", element: "Thổ" });
 
+  // Thiên Đức, Phúc Đức, Nguyệt Đức, Thiên Không, Lưu Hà, Phá Toái
+  const thienDucPos = (9 + yearChiIndex) % 12;
   const nguyetDucPos = (5 + yearChiIndex) % 12;
+  const thienKhongPos = (yearChiIndex + 1) % 12;
+  cungStars[thienDucPos].catTinh.push({ name: "Thiên Đức", element: "Hỏa" });
   cungStars[nguyetDucPos].catTinh.push({ name: "Nguyệt Đức", element: "Hỏa" });
+  cungStars[thienKhongPos].hungTinh.push({ name: "Thiên Không", element: "Hỏa" });
 
+  const luuHaMap = { "Giáp": 9, "Ất": 10, "Bính": 7, "Đinh": 8, "Mậu": 5, "Kỷ": 6, "Canh": 8, "Tân": 3, "Nhâm": 11, "Quý": 0 };
+  const phaToaiMap = { 2: 9, 6: 5, 10: 1, 8: 9, 0: 5, 4: 1, 5: 9, 9: 5, 1: 1, 11: 9, 3: 5, 7: 1 };
+  if (luuHaMap[yearCan] !== undefined) cungStars[luuHaMap[yearCan]].hungTinh.push({ name: "Lưu Hà", element: "Thủy" });
+  if (phaToaiMap[yearChiIndex] !== undefined) cungStars[phaToaiMap[yearChiIndex]].hungTinh.push({ name: "Phá Toái", element: "Hỏa" });
+
+  // Thiên Quan, Thiên Phúc
   const thienQuanMap = { "Giáp": 7, "Ất": 4, "Bính": 5, "Đinh": 2, "Mậu": 3, "Kỷ": 9, "Canh": 11, "Tân": 9, "Nhâm": 10, "Quý": 6 };
   const thienPhucMap = { "Giáp": 9, "Ất": 8, "Bính": 0, "Đinh": 11, "Mậu": 3, "Kỷ": 2, "Canh": 6, "Tân": 5, "Nhâm": 6, "Quý": 5 };
-  cungStars[thienQuanMap[yearCan] || 5].catTinh.push({ name: "Thiên Quan", element: "Hỏa" });
-  cungStars[thienPhucMap[yearCan] || 5].catTinh.push({ name: "Thiên Phúc", element: "Thổ" });
+  cungStars[thienQuanMap[yearCan] || 7].catTinh.push({ name: "Thiên Quan", element: "Hỏa" });
+  cungStars[thienPhucMap[yearCan] || 9].catTinh.push({ name: "Thiên Phúc", element: "Thổ" });
 
-  // Thiên Tài, Thiên Thọ, Thiên Thương, Thiên Sứ
-  cungStars[menhPos].catTinh.push({ name: "Thiên Tài", element: "Thổ" });
-  cungStars[thanPos].catTinh.push({ name: "Thiên Thọ", element: "Thổ" });
-  cungStars[5].hungTinh.push({ name: "Thiên Thương", element: "Thổ" }); // Cung Nô mặc định
-  cungStars[7].hungTinh.push({ name: "Thiên Sứ", element: "Thủy" });   // Cung Tật mặc định
+  // Thiên Giải, Địa Giải
+  const thienGiaiPos = (8 + (lunarMonth - 1)) % 12; // Khởi Thân đi thuận theo tháng
+  const diaGiaiPos = (6 + (lunarMonth - 1)) % 12;   // Khởi Ngọ đi thuận theo tháng
+  cungStars[thienGiaiPos].catTinh.push({ name: "Thiên Giải", element: "Hỏa" });
+  cungStars[diaGiaiPos].catTinh.push({ name: "Địa Giải", element: "Thổ" });
+
+  // Thiên Tài, Thiên Thọ (Khởi từ Mệnh & Thân)
+  const thienTaiPos = (menhPos + yearChiIndex) % 12;
+  const thienThoPos = (thanPos + yearChiIndex) % 12;
+  cungStars[thienTaiPos].catTinh.push({ name: "Thiên Tài", element: "Thổ" });
+  cungStars[thienThoPos].catTinh.push({ name: "Thiên Thọ", element: "Thổ" });
+
+  // Thiên Thương (ở cung Nô Bộc), Thiên Sứ (ở cung Tật Ách)
+  const noPos = cungNamesArr.indexOf("Nô Bộc");
+  const tatPos = cungNamesArr.indexOf("Tật Ách");
+  if (noPos !== -1) cungStars[noPos].hungTinh.push({ name: "Thiên Thương", element: "Thổ" });
+  if (tatPos !== -1) cungStars[tatPos].hungTinh.push({ name: "Thiên Sứ", element: "Thủy" });
+
+  // Thiên La, Địa Võng
   cungStars[4].hungTinh.push({ name: "Thiên La", element: "Kim" });   // Thìn
   cungStars[10].hungTinh.push({ name: "Địa Võng", element: "Kim" }); // Tuất
 
@@ -422,27 +488,48 @@ export function createTuViChart({ name, gender, solarDay, solarMonth, solarYear,
   const viewYearChi = "Ngọ";
   const viewYearChiIndex = 6; // Ngọ = 6
 
-  // L.Thái Tuế
+  // L.Thái Tuế, L.Tang Môn, L.Bạch Hổ
   cungStars[viewYearChiIndex].luuTinh.push({ name: "L.Thái Tuế", isHung: false });
-  // L.Tang Môn (cách Thái Tuế 2 cung thuận), L.Bạch Hổ (đối diện Tang Môn)
   cungStars[(viewYearChiIndex + 2) % 12].luuTinh.push({ name: "L.Tang Môn", isHung: true });
   cungStars[(viewYearChiIndex + 8) % 12].luuTinh.push({ name: "L.Bạch Hổ", isHung: true });
 
-  // L.Lộc Tồn (Bính ở Tỵ = 5)
-  const lLocTonPos = 5;
+  // L.Khốc, L.Hư
+  const lKhocPos = (6 - viewYearChiIndex + 12) % 12;
+  const lHuPos = (6 + viewYearChiIndex) % 12;
+  cungStars[lKhocPos].luuTinh.push({ name: "L.Thiên Khốc", isHung: true });
+  cungStars[lHuPos].luuTinh.push({ name: "L.Thiên Hư", isHung: true });
+
+  // L.Thiên Mã, L.Đào Hoa, L.Hồng Loan
+  const lMaPos = maMap[viewYearChiIndex] ?? 8;
+  const lDaoHoaPos = daoHoaMap[viewYearChiIndex] ?? 3;
+  const lHongLoanPos = (3 - viewYearChiIndex + 12) % 12;
+  cungStars[lMaPos].luuTinh.push({ name: "L.Thiên Mã", isHung: false });
+  cungStars[lDaoHoaPos].luuTinh.push({ name: "L.Đào Hoa", isHung: false });
+  cungStars[lHongLoanPos].luuTinh.push({ name: "L.Hồng Loan", isHung: false });
+
+  // L.Lộc Tồn, L.Kình Dương, L.Đà La
+  const lLocTonPos = locTonMap[viewYearCan] ?? 5;
   cungStars[lLocTonPos].luuTinh.push({ name: "L.Lộc Tồn", isHung: false });
   cungStars[(lLocTonPos + 1) % 12].luuTinh.push({ name: "L.Kình Dương", isHung: true });
   cungStars[(lLocTonPos - 1 + 12) % 12].luuTinh.push({ name: "L.Đà La", isHung: true });
 
-  // L.Thiên Mã (Ngọ ở Thân = 8)
-  cungStars[8].luuTinh.push({ name: "L.Thiên Mã", isHung: false });
+  // L.Khôi, L.Việt
+  const [lKhPos, lViPos] = khoiVietMap[viewYearCan] || [11, 9];
+  cungStars[lKhPos].luuTinh.push({ name: "L.Thiên Khôi", isHung: false });
+  cungStars[lViPos].luuTinh.push({ name: "L.Thiên Việt", isHung: false });
 
-  // L.Khốc, L.Hư
-  cungStars[(viewYearChiIndex + 6) % 12].luuTinh.push({ name: "L.Thiên Khốc", isHung: true });
-  cungStars[(viewYearChiIndex + 6) % 12].luuTinh.push({ name: "L.Thiên Hư", isHung: true });
+  // L.Văn Xương, L.Văn Khúc theo Can năm xem hạn (Bính: Xương tại Thân, Khúc tại Ngọ)
+  cungStars[8].luuTinh.push({ name: "L.Văn Xương", isHung: false });
+  cungStars[6].luuTinh.push({ name: "L.Văn Khúc", isHung: false });
+  cungStars[11].luuTinh.push({ name: "L.Kiếp Sát", isHung: true });
 
   // L.Tứ Hóa năm Bính: Đồng Lộc, Cơ Quyền, Xương Khoa, Liêm Kỵ
-  const lTuHoaMap = [{ n: "Thiên Đồng", h: "L.Hóa Lộc" }, { n: "Thiên Cơ", h: "L.Hóa Quyền" }, { n: "Văn Xương", h: "L.Hóa Khoa" }, { n: "Liêm Trinh", h: "L.Hóa Kỵ" }];
+  const lTuHoaMap = [
+    { n: "Thiên Đồng", h: "L.Hóa Lộc" },
+    { n: "Thiên Cơ", h: "L.Hóa Quyền" },
+    { n: "Văn Xương", h: "L.Hóa Khoa" },
+    { n: "Liêm Trinh", h: "L.Hóa Kỵ" }
+  ];
   lTuHoaMap.forEach(item => {
     for (let pos = 0; pos < 12; pos++) {
       const hasStar = cungStars[pos].chinhTinh.find(s => s.name === item.n) ||
