@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { Calendar, User, Clock, Sparkles, Key, ArrowRight, ShieldCheck, History } from 'lucide-react';
+import React from 'react';
+import { Calendar, User, Clock, Sparkles, ArrowRight, History } from 'lucide-react';
 import { GIO_CHI } from '../utils/lunarCalendar';
 
 export default function InputForm({ 
@@ -7,12 +7,9 @@ export default function InputForm({
   setFormData, 
   onSubmit, 
   loading, 
-  apiKey, 
-  setApiKey,
-  onOpenHistory,
-  historyCount = 0
+  onOpenHistory, 
+  historyCount = 0 
 }) {
-  const [showApiKeyInput, setShowApiKeyInput] = useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -163,33 +160,6 @@ export default function InputForm({
             </div>
           </div>
 
-          {/* Tùy chỉnh API Key */}
-          <div className="pt-2">
-            <button
-              type="button"
-              onClick={() => setShowApiKeyInput(!showApiKeyInput)}
-              className="text-xs text-[#c48b4d] hover:text-[#b07839] flex items-center gap-1.5 transition-colors font-semibold"
-            >
-              <Key className="w-3.5 h-3.5" />
-              {showApiKeyInput ? 'Ẩn cấu hình Gemini API Key' : 'Tùy chỉnh Gemini API Key (Tùy chọn)'}
-            </button>
-
-            {showApiKeyInput && (
-              <div className="mt-2.5 p-3.5 rounded-xl bg-[#fbf9f5] border border-[#ede7da] space-y-1.5">
-                <label className="block text-xs text-[#786d5e]">
-                  Google Gemini API Key (để trống để dùng mô hình AI tích hợp):
-                </label>
-                <input
-                  type="password"
-                  className="warm-input text-xs"
-                  placeholder="AIzaSy..."
-                  value={apiKey}
-                  onChange={(e) => setApiKey(e.target.value)}
-                />
-              </div>
-            )}
-          </div>
-
           {/* Nút Submit */}
           <div className="pt-3">
             <button
@@ -200,11 +170,11 @@ export default function InputForm({
               {loading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Đang lập lá số & phân tích...
+                  Đang lập lá số...
                 </>
               ) : (
                 <>
-                  Xem Lá Số & Luận Giải
+                  Lập Lá Số Tử Vi
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}

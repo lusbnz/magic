@@ -368,3 +368,110 @@ function generateDynamicLocalChatResponse(chartData, question) {
   const menhStars = menh?.chinhTinh.map(s => s.name).join(", ") || "Vô chính diệu";
   return `Theo lý số Tử Vi của đương số **${info.name}** (tuổi ${info.canChiYear}, mệnh ${info.nguHanh}, Cung Mệnh tại ${info.cungMenhChi} thủ sao **${menhStars}**): Vận mệnh nằm trong tay người biết nỗ lực và tu dưỡng. Khi bạn thấu hiểu bản thân và hành động đúng thời cơ, vạn sự lành ắt sẽ tự tìm đến!`;
 }
+
+/**
+ * Phân tích Luận Giải So Đôi 2 Lá Số (Synastry / Tương Hợp) bằng Gemini AI
+ */
+export async function analyzeCompatibilityWithAI(compatResult, apiKey = "", onStreamChunk = null) {
+  const key = (apiKey || "").trim();
+  const { info1, info2, totalScore, overallRating, pillars, compareType } = compatResult;
+  const isMarriage = compareType === 'marriage';
+
+  if (key.length > 10) {
+    const prompt = `
+Bạn là bậc thầy Tử Vi Đẩu Số & Phong Thủy Bát Trạch hàng đầu. Hãy viết bản luận giải chuyên sâu về mức độ hòa hợp giữa 2 đương số dưới đây (bắt đầu ngay từ mục 1, tuyệt đối không viết lời chào hỏi hay dẫn nhập):
+
+MỤC ĐÍCH ĐỐI CHIẾU: ${isMarriage ? 'HÔN NHÂN & TÌNH DUYÊN (VỢ - CHỒNG)' : 'HỢP TÁC LÀM ĂN & KINH DOANH (ĐỐI TÁC)'}
+TỔNG ĐIỂM HÒA HỢP: ${totalScore}/100 - ĐÁNH GIÁ: ${overallRating}
+
+NGƯỜI 1: ${info1.name} (${info1.gender})
+- Năm sinh: ${info1.canChiYear} (${info1.lunarDate}), Mệnh: ${info1.nguHanh}, Cục: ${info1.cucName}, Cung Phi: ${info1.cungPhi?.name} (${info1.cungPhi?.element})
+- Cung Mệnh: ${info1.cungMenhChi}, Chủ Mệnh: ${info1.chuMenh}, Chủ Thân: ${info1.chuThan}
+
+NGƯỜI 2: ${info2.name} (${info2.gender})
+- Năm sinh: ${info2.canChiYear} (${info2.lunarDate}), Mệnh: ${info2.nguHanh}, Cục: ${info2.cucName}, Cung Phi: ${info2.cungPhi?.name} (${info2.cungPhi?.element})
+- Cung Mệnh: ${info2.cungMenhChi}, Chủ Mệnh: ${info2.chuMenh}, Chủ Thân: ${info2.chuThan}
+
+KẾT QUẢ ĐỐI CHIẾU 5 TRỤ CỘT:
+${pillars.map(p => `- ${p.title}: ${p.score}/${p.maxScore}đ [${p.status}] -> ${p.desc}`).join('\n')}
+
+BẮT ĐẦU NGAY VỚI 5 MỤC DƯỚI ĐÂY:
+### 1. 🌟 TỔNG QUAN DUYÊN PHẬN & ĐỘ HÒA HỢP (${totalScore}/100)
+- Nhận định tổng quát về nhân duyên, sự hòa hợp về tính cách và khí chất giữa hai người.
+
+### 2. ⚡ PHÂN TÍCH TƯƠNG SINH - TƯƠNG KHẮC BẢN MỆNH & CAN CHI
+- Phân tích chi tiết ngũ hành nạp âm (${info1.nguHanh} ⟷ ${info2.nguHanh}), can hợp/khắc, chi tam hợp/lục hợp.
+
+### 3. 🏛️ CUNG PHI BÁT TRẠCH & KHÍ TRƯỜNG GIA ĐẠO
+- Phối quẻ Cung Phi (${info1.cungPhi?.name} ⟷ ${info2.cungPhi?.name}): Đánh giá phúc lộc, sức khỏe, tài khí và hướng phát triển chung.
+
+### 4. 🔮 ĐỐI CHIẾU CUNG MỆNH & CUNG PHỐI NGẪU TỬ VI
+- Tương tác giữa các chính tinh thủ Mệnh - Thân và cung ${isMarriage ? 'Phu Thê' : 'Quan Lộc / Tài Bạch'} của hai người.
+
+### 5. 💡 LỜI KHUYÊN PHONG THỦY & PHƯƠNG PHÁP HÓA GIẢI XUNG KHẮC
+- Hướng dẫn cụ thể cách hóa giải điểm xung khắc (nếu có), chọn năm tốt sinh con / mở rộng kinh doanh, phong thủy nhà ở / văn phòng và thái độ ứng xử để bền chặt lâu dài.
+`;
+
+    const genAI = new GoogleGenerativeAI(key);
+
+    for (const modelName of CANDIDATE_MODELS) {
+      try {
+        const model = genAI.getGenerativeModel({ model: modelName });
+        if (typeof onStreamChunk === 'function') {
+          const resultStream = await model.generateContentStream(prompt);
+          let accumulated = "";
+          for await (const chunk of resultStream.stream) {
+            const chunkText = chunk.text();
+            if (chunkText) {
+              accumulated += chunkText;
+              onStreamChunk(accumulated);
+            }
+          }
+          if (accumulated && accumulated.length > 50) {
+            return accumulated;
+          }
+        } else {
+          const result = await model.generateContent(prompt);
+          const response = await result.response;
+          const text = response.text();
+          if (text && text.length > 50) {
+            return text;
+          }
+        }
+      } catch (err) {
+        console.warn(`Model ${modelName} failed for compatibility, trying next:`, err?.message || err);
+      }
+    }
+  }
+
+  // Fallback luận giải tự động chất lượng cao
+  return generateLocalCompatibilityReport(compatResult);
+}
+
+function generateLocalCompatibilityReport(compatResult) {
+  const { info1, info2, totalScore, overallRating, pillars, compareType } = compatResult;
+  const isMarriage = compareType === 'marriage';
+
+  return `### 1. 🌟 TỔNG QUAN DUYÊN PHẬN & ĐỘ HÒA HỢP (${totalScore}/100 - ${overallRating})
+Mối quan hệ giữa **${info1.name}** (${info1.canChiYear}, ${info1.nguHanh}) và **${info2.name}** (${info2.canChiYear}, ${info2.nguHanh}) đạt mức tương hợp **${totalScore}/100 điểm** (${overallRating}). Hai bạn sở hữu nhiều điểm giao thoa tốt về tư tưởng, có khả năng đồng hành lâu dài nếu cùng nhau vun đắp và lắng nghe.
+
+### 2. ⚡ PHÂN TÍCH TƯƠNG SINH - TƯƠNG KHẮC BẢN MỆNH & CAN CHI
+- **Ngũ Hành Nạp Âm:** ${pillars[0].desc}
+- **Thiên Can:** ${pillars[2].desc}
+- **Địa Chi:** ${pillars[3].desc}
+Tổng thể ngũ hành và can chi cho thấy sự hỗ trợ nhịp nhàng về vận thế, giảm thiểu va chạm lớn trong đời sống thường nhật.
+
+### 3. 🏛️ CUNG PHI BÁT TRẠCH & KHÍ TRƯỜNG
+- Cung Phi của **${info1.name}** là **${info1.cungPhi?.name}** (${info1.cungPhi?.element}), của **${info2.name}** là **${info2.cungPhi?.name}** (${info2.cungPhi?.element}).
+- Hai cung phối lại tạo nên khí trường **${pillars[1].status}**: ${pillars[1].desc}. Đây là yếu tố quan trọng quyết định sự êm ấm, thịnh vượng của không gian sống chung.
+
+### 4. 🔮 ĐỐI CHIẾU CUNG MỆNH & TỬ VI
+- ${pillars[4].desc}
+- Sự kết hợp giữa các bộ sao thủ Mệnh giúp hai người vừa giữ được nét riêng, vừa bù đắp được những điểm còn thiếu của nhau trong việc quản lý tài chính và ra quyết định lớn.
+
+### 5. 💡 LỜI KHUYÊN & PHƯƠNG PHÁP HÓA GIẢI
+1. **Giao tiếp cởi mở:** Hãy luôn thẳng thắn chia sẻ những lo âu, tránh giữ kín trong lòng dễ gây hiểu lầm.
+2. **Phong thủy hỗ trợ:** ${isMarriage ? 'Bố trí phòng ngủ và hướng bếp theo cung vị tương sinh, ưu tiên màu sắc ngũ hành trung gian để dung dưỡng hòa khí.' : 'Chọn màu sắc thương hiệu và phòng làm việc hòa hợp ngũ hành để kích hoạt tài lộc thuận buồm xuôi gió.'}
+3. **Lấy Đức làm gốc:** "Vạn sự tại nhân, đức năng thắng số" - sự thấu hiểu, lòng bao dung và trách nhiệm chính là chiếc chìa khóa vạn năng đem lại hạnh phúc và thành công viên mãn!`;
+}
+
