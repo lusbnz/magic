@@ -3,14 +3,14 @@
  */
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// Danh sách các model Gemini AI thế hệ mới nhất theo thứ tự ưu tiên
+// Danh sách các model Gemini AI thế hệ mới nhất tối ưu tốc độ phản hồi tức thì (Ultra Low Latency)
 const CANDIDATE_MODELS = [
+  "gemini-3.5-flash-lite",
+  "gemini-3.1-flash-lite",
   "gemini-3.7-flash",
   "gemini-3.6-flash",
   "gemini-3.5-flash",
   "gemini-3-flash-preview",
-  "gemini-2.5-flash",
-  "gemini-2.5-pro",
   "gemini-flash-latest"
 ];
 
@@ -29,7 +29,11 @@ async function callGeminiStream(prompt, key, onStreamChunk = null) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }]
+          contents: [{ parts: [{ text: prompt }] }],
+          generationConfig: {
+            maxOutputTokens: 2500,
+            temperature: 0.7
+          }
         })
       });
 
@@ -366,7 +370,11 @@ async function callGeminiChat(systemContext, messageHistory, newMessage, key) {
           systemInstruction: {
             parts: [{ text: systemContext }]
           },
-          contents
+          contents,
+          generationConfig: {
+            maxOutputTokens: 1000,
+            temperature: 0.7
+          }
         })
       });
 
