@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Sparkles, RefreshCw, Compass, History, ArrowRightLeft } from 'lucide-react';
+import { Sparkles, RefreshCw, Compass, History, ArrowRightLeft, ChevronLeft } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 import InputForm from './components/InputForm';
@@ -40,7 +40,7 @@ export default function App() {
   });
   const [analysisText, setAnalysisText] = useState('');
   const [isAiLoading, setIsAiLoading] = useState(false);
-  const [isAiAnalysisOpen, setIsAiAnalysisOpen] = useState(true);
+  const [isAiAnalysisOpen, setIsAiAnalysisOpen] = useState(false);
 
   const currentRequestIdRef = React.useRef(0);
 
@@ -69,7 +69,7 @@ export default function App() {
     setIsBoardLoading(true);
     setIsAiLoading(true);
     setAnalysisText('');
-    setIsAiAnalysisOpen(true);
+    setIsAiAnalysisOpen(false);
 
     try {
       // 1. Tự động lưu thông tin form vào IndexedDB
@@ -281,16 +281,20 @@ export default function App() {
                   onClick={() => setIsAiAnalysisOpen(!isAiAnalysisOpen)}
                   className={`text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer border shadow-2xs ${
                     isAiAnalysisOpen
-                      ? 'bg-[#fef7ee] text-[#c48b4d] border-[#fbd38d]'
-                      : 'bg-[#faf7f0] hover:bg-[#ede7da] text-[#5e5343] border-[#e8e3d7]'
+                      ? 'bg-[#2d261e] text-white border-[#2d261e]'
+                      : 'bg-[#fef7ee] hover:bg-[#faedd9] text-[#c48b4d] border-[#fbd38d]'
                   }`}
                 >
-                  <Sparkles className="w-3.5 h-3.5 text-[#c48b4d]" />
+                  <Sparkles className={`w-3.5 h-3.5 ${isAiLoading ? 'animate-spin' : 'text-[#facc15]'}`} />
                   <span>{isAiAnalysisOpen ? 'Đang Mở Luận Giải AI' : 'Mở Luận Giải AI'}</span>
-                  {isAiLoading && (
+                  {isAiLoading ? (
                     <span className="w-2 h-2 rounded-full bg-[#f59e0b] animate-ping ml-0.5"></span>
-                  )}
+                  ) : analysisText ? (
+                    <span className="w-2 h-2 rounded-full bg-[#10b981] ml-0.5"></span>
+                  ) : null}
                 </button>
+
+                <div className="h-4 w-[1px] bg-[#e8e3d7] hidden sm:block"></div>
 
                 <button
                   onClick={() => setIsHistoryOpen(true)}
@@ -307,28 +311,10 @@ export default function App() {
               </div>
             </div>
 
-            {/* Layout: Bàn Lá Số + Bảng Luận Giải AI */}
-            {isAiAnalysisOpen ? (
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
-                <div className="lg:col-span-7 xl:col-span-7 space-y-4">
-                  <TuViBoard
-                    chartData={chartData}
-                    selectedCungIndex={selectedCungIndex}
-                    onSelectCung={(idx) => setSelectedCungIndex(idx)}
-                    isLoading={isBoardLoading}
-                  />
-                </div>
-                <div className="lg:col-span-5 xl:col-span-5">
-                  <AiAnalysisView
-                    analysisText={analysisText}
-                    selectedCung={chartData.cungList[selectedCungIndex]}
-                    isLoading={isAiLoading}
-                    onClose={() => setIsAiAnalysisOpen(false)}
-                  />
-                </div>
-              </div>
-            ) : (
-              <div className="w-full space-y-6">
+            {/* Layout: Khi thu gọn (isAiAnalysisOpen = false), Bàn lá số mở rộng 100%. Khi mở rộng, chia 8/12 và 4/12 */}
+            <div className={`grid grid-cols-1 ${isAiAnalysisOpen ? 'lg:grid-cols-12' : 'lg:grid-cols-1'} gap-6 items-start transition-all duration-300`}>
+              {/* Cột Bàn Lá Số */}
+              <div className={`${isAiAnalysisOpen ? 'lg:col-span-8' : 'w-full'} space-y-6 transition-all duration-300`}>
                 <TuViBoard
                   chartData={chartData}
                   selectedCungIndex={selectedCungIndex}
@@ -336,6 +322,38 @@ export default function App() {
                   isLoading={isBoardLoading}
                 />
               </div>
+
+              {/* Cột Luận Giải Chi Tiết Của AI (Thu gọn sang phải) */}
+              {isAiAnalysisOpen && (
+                <div className="lg:col-span-4 transition-all duration-300">
+                  <AiAnalysisView
+                    analysisText={analysisText}
+                    selectedCung={chartData.cungList[selectedCungIndex]}
+                    isLoading={isAiLoading}
+                    onClose={() => setIsAiAnalysisOpen(false)}
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Nút Tab Nổi Cạnh Phải Màn Hình khi đang thu gọn */}
+            {!isAiAnalysisOpen && (
+              <button
+                onClick={() => setIsAiAnalysisOpen(true)}
+                className="fixed right-0 top-1/2 -translate-y-1/2 z-40 bg-[#2d261e] hover:bg-[#43392e] text-white py-3.5 px-2 rounded-l-2xl shadow-2xl flex flex-col items-center gap-2 cursor-pointer transition-all border-l border-t border-b border-[#43392e] group animate-in slide-in-from-right duration-200"
+                title="Mở bảng Luận Giải Chi Tiết AI"
+              >
+                <Sparkles className="w-4 h-4 text-[#facc15] group-hover:scale-110 transition-transform" />
+                <span className="[writing-mode:vertical-rl] text-[11px] font-extrabold tracking-widest text-[#f8fafc]">
+                  LUẬN GIẢI AI
+                </span>
+                {isAiLoading ? (
+                  <span className="w-2 h-2 rounded-full bg-[#f59e0b] animate-ping" />
+                ) : analysisText ? (
+                  <span className="w-2 h-2 rounded-full bg-[#10b981]" />
+                ) : null}
+                <ChevronLeft className="w-3.5 h-3.5 text-white/70 group-hover:-translate-x-0.5 transition-transform" />
+              </button>
             )}
           </div>
         )}
