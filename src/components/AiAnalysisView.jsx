@@ -103,7 +103,7 @@ export default function AiAnalysisView({ analysisText, selectedCung, isLoading =
                   Thầy AI Đang Luận Giải
                 </h3>
                 <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#fef7ee] text-[#c48b4d] border border-[#fbd38d]">
-                  <Bot className="w-3 h-3 mr-1" /> Gemini 3.6
+                  <Bot className="w-3 h-3 mr-1" /> Gemini 3.7 Flash
                 </span>
               </div>
               <p className="text-[11px] text-[#786d5e] flex items-center gap-1.5 mt-0.5">

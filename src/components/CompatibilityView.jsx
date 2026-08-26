@@ -6,12 +6,20 @@ import {
   Layers, 
   Users, 
   ArrowRightLeft,
-  Table
+  Table,
+  Bot,
+  RefreshCw,
+  BookOpen,
+  Compass,
+  Zap,
+  Building,
+  Lightbulb
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 import { createTuViChart } from '../utils/tuViEngine';
 import { calculateOverallCompatibility } from '../utils/compatibilityEngine';
+import { analyzeCompatibilityWithAI } from '../services/aiService';
 import { GIO_CHI } from '../utils/lunarCalendar';
 
 export default function CompatibilityView({ 
@@ -47,6 +55,9 @@ export default function CompatibilityView({
   const [chart1, setChart1] = useState(null);
   const [chart2, setChart2] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [aiAnalysisText, setAiAnalysisText] = useState('');
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const currentAiReqId = React.useRef(0);
 
   const handleQuickSelectP1 = (profileId) => {
     const prof = savedProfiles.find(p => p.id === profileId);
@@ -78,8 +89,34 @@ export default function CompatibilityView({
     }
   };
 
+  const handleRunAiAnalysis = async (compatData) => {
+    const data = compatData || compatResult;
+    if (!data) return;
+    const reqId = ++currentAiReqId.current;
+    setIsAiLoading(true);
+    setAiAnalysisText('');
+
+    try {
+      const result = await analyzeCompatibilityWithAI(data, apiKey, (streamed) => {
+        if (reqId === currentAiReqId.current) {
+          setAiAnalysisText(streamed);
+        }
+      });
+      if (reqId === currentAiReqId.current && result) {
+        setAiAnalysisText(result);
+      }
+    } catch (err) {
+      console.error("AI compatibility error:", err);
+    } finally {
+      if (reqId === currentAiReqId.current) {
+        setIsAiLoading(false);
+      }
+    }
+  };
+
   const handleAnalyze = () => {
     setIsLoading(true);
+    setAiAnalysisText('');
 
     try {
       const c1 = createTuViChart(p1);
@@ -98,6 +135,9 @@ export default function CompatibilityView({
           colors: ['#10b981', '#f59e0b', '#ec4899', '#8b5cf6']
         });
       }
+
+      // Tự động gọi Luận giải AI
+      handleRunAiAnalysis(res);
     } catch (err) {
       console.error("Lỗi đối chiếu:", err);
       alert("Đã có lỗi xảy ra trong quá trình đối chiếu. Xin vui lòng thử lại!");
@@ -570,7 +610,7 @@ export default function CompatibilityView({
                       <span className="text-[11px] text-[#8c7f6e] block font-bold">{compatResult.info1.name}:</span>
                       <span className="font-bold text-[#241e17]">
                         {compareType === 'marriage' 
-                          ? `Cung ${compatResult.tuViDetails?.phuThe1Chi || 'Phu Thê'} (${compatResult.tuViDetails?.phuStars1})`
+                          ? `Cung ${compatResult.tuViDetails?.phuThe1Chi || 'Phu Thê'} (${compatResult.tuViDetails?.phuStars1})` 
                           : `Cung Quan Lộc (${compatResult.tuViDetails?.quanStars1})`}
                       </span>
                     </div>
@@ -578,7 +618,7 @@ export default function CompatibilityView({
                       <span className="text-[11px] text-[#8c7f6e] block font-bold">{compatResult.info2.name}:</span>
                       <span className="font-bold text-[#241e17]">
                         {compareType === 'marriage' 
-                          ? `Cung ${compatResult.tuViDetails?.phuThe2Chi || 'Phu Thê'} (${compatResult.tuViDetails?.phuStars2})`
+                          ? `Cung ${compatResult.tuViDetails?.phuThe2Chi || 'Phu Thê'} (${compatResult.tuViDetails?.phuStars2})` 
                           : `Cung Quan Lộc (${compatResult.tuViDetails?.quanStars2})`}
                       </span>
                     </div>
@@ -590,6 +630,188 @@ export default function CompatibilityView({
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* 4. LUẬN GIẢI CHUYÊN SÂU AI SO ĐÔI (5 MỤC TOÀN DIỆN) */}
+          <div className="warm-card p-5 sm:p-6 bg-[#ffffff] border-2 border-[#ded6c7] rounded-2xl shadow-xs space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#eee8dc] pb-3.5">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-[#fef7ee] border border-[#fbd38d] flex items-center justify-center text-[#c48b4d] shadow-2xs">
+                  <Sparkles className={`w-4 h-4 ${isAiLoading ? 'animate-spin' : ''}`} style={{ animationDuration: '3s' }} />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h4 className="text-base font-black text-[#241e17] tracking-tight">
+                      Luận Giải Chi Tiết AI So Đôi 2 Lá Số
+                    </h4>
+                    <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#fef7ee] text-[#c48b4d] border border-[#fbd38d]">
+                      <Bot className="w-3 h-3 mr-1" /> {apiKey ? 'Gemini Flash' : 'Engine Chuyên Sâu'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#786d5e]">
+                    Phân tích vận trình nhân duyên, phong thủy bát trạch và phương pháp hóa giải xung khắc
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => handleRunAiAnalysis()}
+                  disabled={isAiLoading}
+                  className="text-xs font-bold px-3 py-1.5 rounded-lg bg-[#faf7f0] hover:bg-[#ede7da] text-[#5e5343] flex items-center gap-1.5 transition-colors border border-[#e8e2d5] cursor-pointer disabled:opacity-50 shadow-2xs"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isAiLoading ? 'animate-spin' : ''}`} />
+                  {isAiLoading ? 'Đang luận giải...' : 'Tạo lại luận giải'}
+                </button>
+              </div>
+            </div>
+
+            {/* AI Loading Shimmer State */}
+            {isAiLoading && !aiAnalysisText ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 pt-1">
+                {[
+                  { label: 'Tổng Quan Duyên Phận', badge: 'Độ Hòa Hợp', icon: Compass, color: 'text-amber-700 bg-amber-50 border-amber-200' },
+                  { label: 'Bản Mệnh & Can Chi', badge: 'Tương Sinh Tương Khắc', icon: Zap, color: 'text-blue-700 bg-blue-50 border-blue-200' },
+                  { label: 'Cung Phi Bát Trạch', badge: 'Khí Trường Gia Đạo', icon: Building, color: 'text-emerald-700 bg-emerald-50 border-emerald-200' },
+                  { label: 'Tử Vi Đối Chiếu', badge: 'Mệnh Thân Phối Ngẫu', icon: Heart, color: 'text-rose-700 bg-rose-50 border-rose-200' },
+                  { label: 'Lời Khuyên & Hóa Giải', badge: 'Bí Quyết Vun Đắp', icon: Lightbulb, color: 'text-purple-700 bg-purple-50 border-purple-200' }
+                ].map((skel, sIdx) => {
+                  const Icon = skel.icon;
+                  return (
+                    <div
+                      key={sIdx}
+                      className={`p-4 rounded-xl shimmer-card shadow-2xs space-y-3 ${sIdx === 4 ? 'md:col-span-2' : ''}`}
+                    >
+                      <div className="flex items-center gap-2 border-b border-[#eee7d8] pb-2">
+                        <div className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 border ${skel.color}`}>
+                          <Icon className="w-3.5 h-3.5" />
+                        </div>
+                        <span className="text-[13px] font-black text-[#241e17]">{skel.label}:</span>
+                        <span className="text-[12px] font-bold text-[#5e5343]">{skel.badge}</span>
+                        <div className="w-12 h-3.5 rounded shimmer-wave ml-auto" />
+                      </div>
+                      <div className="space-y-2 pt-1">
+                        <div className="h-3.5 rounded shimmer-wave w-full" />
+                        <div className="h-3.5 rounded shimmer-wave w-[90%]" />
+                        <div className="h-3.5 rounded shimmer-wave w-[75%]" />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              /* Danh sách 5 mục AI Luận giải */
+              <div className="space-y-3.5 pt-1">
+                {(() => {
+                  const rawSecs = (aiAnalysisText || '').split(/###\s*/).filter(Boolean);
+                  const parsedSections = [];
+
+                  const getCompatSectionMeta = (headerText, fallbackIdx) => {
+                    const textUpper = (headerText || '').toUpperCase();
+                    if (textUpper.includes('TỔNG QUAN') || textUpper.includes('DUYÊN PHẬN') || /^[#\s*•]*1[\s.]/.test(headerText || '')) {
+                      return { id: 'sec-1', label: 'Tổng Quan', icon: Compass, color: 'text-amber-700 bg-amber-50 border-amber-200', badge: 'Duyên Phận & Mức Hòa Hợp' };
+                    }
+                    if (textUpper.includes('TƯƠNG SINH') || textUpper.includes('NGŨ HÀNH') || textUpper.includes('CAN CHI') || /^[#\s*•]*2[\s.]/.test(headerText || '')) {
+                      return { id: 'sec-2', label: 'Bản Mệnh & Can Chi', icon: Zap, color: 'text-blue-700 bg-blue-50 border-blue-200', badge: 'Tương Sinh & Tương Khắc' };
+                    }
+                    if (textUpper.includes('CUNG PHI') || textUpper.includes('BÁT TRẠCH') || textUpper.includes('KHÍ TRƯỜNG') || /^[#\s*•]*3[\s.]/.test(headerText || '')) {
+                      return { id: 'sec-3', label: 'Cung Phi Bát Trạch', icon: Building, color: 'text-emerald-700 bg-emerald-50 border-emerald-200', badge: 'Khí Trường Gia Đạo' };
+                    }
+                    if (textUpper.includes('MỆNH') || textUpper.includes('TỬ VI') || textUpper.includes('PHỐI NGẪU') || /^[#\s*•]*4[\s.]/.test(headerText || '')) {
+                      return { id: 'sec-4', label: 'Tử Vi Đối Chiếu', icon: Heart, color: 'text-rose-700 bg-rose-50 border-rose-200', badge: 'Mệnh Thân & Phối Ngẫu' };
+                    }
+                    if (textUpper.includes('KHUYÊN') || textUpper.includes('HÓA GIẢI') || textUpper.includes('PHƯƠNG PHÁP') || /^[#\s*•]*5[\s.]/.test(headerText || '')) {
+                      return { id: 'sec-5', label: 'Lời Khuyên Hóa Giải', icon: Lightbulb, color: 'text-purple-700 bg-purple-50 border-purple-200', badge: 'Bí Quyết Vun Đắp' };
+                    }
+                    const defaultMetas = [
+                      { id: 'sec-1', label: 'Tổng Quan', icon: Compass, color: 'text-amber-700 bg-amber-50 border-amber-200', badge: 'Duyên Phận & Mức Hòa Hợp' },
+                      { id: 'sec-2', label: 'Bản Mệnh & Can Chi', icon: Zap, color: 'text-blue-700 bg-blue-50 border-blue-200', badge: 'Tương Sinh & Tương Khắc' },
+                      { id: 'sec-3', label: 'Cung Phi Bát Trạch', icon: Building, color: 'text-emerald-700 bg-emerald-50 border-emerald-200', badge: 'Khí Trường Gia Đạo' },
+                      { id: 'sec-4', label: 'Tử Vi Đối Chiếu', icon: Heart, color: 'text-rose-700 bg-rose-50 border-rose-200', badge: 'Mệnh Thân & Phối Ngẫu' },
+                      { id: 'sec-5', label: 'Lời Khuyên Hóa Giải', icon: Lightbulb, color: 'text-purple-700 bg-purple-50 border-purple-200', badge: 'Bí Quyết Vun Đắp' }
+                    ];
+                    return defaultMetas[fallbackIdx] || { id: `sec-${fallbackIdx}`, label: 'Luận Giải', icon: BookOpen, color: 'text-slate-700 bg-slate-50 border-slate-200', badge: 'Chi Tiết' };
+                  };
+
+                  for (let i = 0; i < rawSecs.length; i++) {
+                    const sec = rawSecs[i].trim();
+                    if (!sec) continue;
+                    const lines = sec.split('\n');
+                    const headerLine = lines[0].trim();
+                    const content = lines.slice(1).join('\n').trim();
+                    if (!content && (headerLine === '--' || headerLine === '---' || headerLine.length > 80 || headerLine.startsWith('Dưới đây'))) continue;
+                    
+                    const title = headerLine.replace(/^[\d.\s🌟💼💰❤️🔮⚡🏛️💡]+/, '').trim();
+                    const meta = getCompatSectionMeta(headerLine, parsedSections.length);
+                    parsedSections.push({
+                      idx: parsedSections.length,
+                      rawTitle: headerLine,
+                      title: title || meta.label,
+                      content: content || headerLine,
+                      meta
+                    });
+                  }
+
+                  return (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                      {parsedSections.map((sec, idx) => {
+                        const Icon = sec.meta.icon;
+                        const isFullWidth = idx === 4 || parsedSections.length === 1;
+
+                        return (
+                          <div
+                            key={idx}
+                            className={`p-4 rounded-xl bg-[#faf7f0] border border-[#e8e2d5] shadow-2xs hover:border-[#c48b4d]/60 transition-all ${
+                              isFullWidth ? 'md:col-span-2' : ''
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 border-b border-[#eee7d8] pb-2 mb-2.5">
+                              <div className={`w-6 h-6 rounded-md flex items-center justify-center flex-shrink-0 border ${sec.meta.color}`}>
+                                <Icon className="w-3.5 h-3.5" />
+                              </div>
+                              <h5 className="text-[13.5px] sm:text-[14px] font-black text-[#241e17] tracking-tight flex-1">
+                                {sec.meta.label}: <span className="font-bold text-[#5e5343]">{sec.meta.badge}</span>
+                              </h5>
+                            </div>
+
+                            <div className="space-y-2 text-[#332b22] text-[13px] leading-relaxed">
+                              {sec.content.split('\n').filter(Boolean).map((p, pIdx) => {
+                                const clean = p.trim().replace(/^[-*•]\s*/, '').trim();
+                                const parts = clean.split(/(\*\*.*?\*\*|\*[^*]+?\*)/g);
+                                return (
+                                  <div key={pIdx} className="flex items-start gap-2">
+                                    <div className="w-1.5 h-1.5 rounded-full bg-[#c48b4d] mt-1.5 flex-shrink-0" />
+                                    <p className="flex-1 leading-relaxed">
+                                      {parts.map((part, partIdx) => {
+                                        if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+                                          return (
+                                            <strong key={partIdx} className="font-extrabold text-[#c48b4d]">
+                                              {part.slice(2, -2)}
+                                            </strong>
+                                          );
+                                        }
+                                        if (part.startsWith('*') && part.endsWith('*') && part.length > 2) {
+                                          return (
+                                            <strong key={partIdx} className="font-bold text-[#b45309]">
+                                              {part.slice(1, -1)}
+                                            </strong>
+                                          );
+                                        }
+                                        return <span key={partIdx}>{part}</span>;
+                                      })}
+                                    </p>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
           </div>
         </div>
       )}

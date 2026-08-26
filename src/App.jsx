@@ -4,10 +4,13 @@ import confetti from 'canvas-confetti';
 
 import InputForm from './components/InputForm';
 import TuViBoard from './components/TuViBoard';
+import AiAnalysisView from './components/AiAnalysisView';
+import FloatingChatWidget from './components/FloatingChatWidget';
 import HistorySidebar from './components/HistorySidebar';
 import CompatibilityView from './components/CompatibilityView';
 
 import { createTuViChart } from './utils/tuViEngine';
+import { analyzeTuViWithAI } from './services/aiService';
 import { getAllProfiles, saveProfile, deleteProfile, clearAllProfiles } from './utils/historyDb';
 
 export default function App() {
@@ -26,6 +29,19 @@ export default function App() {
   const [loading, setLoading] = useState(false);
   const [isBoardLoading, setIsBoardLoading] = useState(false);
   const [selectedCungIndex, setSelectedCungIndex] = useState(null);
+  
+  // AI Analysis States
+  const [apiKey, setApiKey] = useState(() => {
+    try {
+      return localStorage.getItem('tuvi_gemini_api_key') || '';
+    } catch (e) {
+      return '';
+    }
+  });
+  const [analysisText, setAnalysisText] = useState('');
+  const [isAiLoading, setIsAiLoading] = useState(false);
+  const [isAiAnalysisOpen, setIsAiAnalysisOpen] = useState(true);
+
   const currentRequestIdRef = React.useRef(0);
 
   // History Sidebar state
@@ -51,6 +67,9 @@ export default function App() {
 
     setLoading(true);
     setIsBoardLoading(true);
+    setIsAiLoading(true);
+    setAnalysisText('');
+    setIsAiAnalysisOpen(true);
 
     try {
       // 1. Tự động lưu thông tin form vào IndexedDB
@@ -63,6 +82,23 @@ export default function App() {
 
       setChartData(chart);
       setSelectedCungIndex(chart.menhPos);
+
+      // 3. Khởi chạy Luận giải AI song song (Streaming)
+      analyzeTuViWithAI(chart, apiKey, (chunk) => {
+        if (requestId === currentRequestIdRef.current) {
+          setAnalysisText(chunk);
+        }
+      }).then((result) => {
+        if (requestId === currentRequestIdRef.current && result) {
+          setAnalysisText(result);
+        }
+      }).catch((aiErr) => {
+        console.error("AI analysis error:", aiErr);
+      }).finally(() => {
+        if (requestId === currentRequestIdRef.current) {
+          setIsAiLoading(false);
+        }
+      });
 
       // Hiệu ứng Shimmer mượt mà cho 12 Cung (400ms) trước khi mở đầy đủ
       await new Promise(resolve => setTimeout(resolve, 400));
@@ -93,6 +129,7 @@ export default function App() {
     currentRequestIdRef.current++;
     setLoading(false);
     setIsBoardLoading(false);
+    setIsAiLoading(false);
 
     const profileData = {
       name: profile.name,
@@ -107,6 +144,7 @@ export default function App() {
 
     if (chartData) {
       setChartData(null);
+      setAnalysisText('');
       setSelectedCungIndex(null);
     }
   };
@@ -127,7 +165,9 @@ export default function App() {
     currentRequestIdRef.current++;
     setLoading(false);
     setIsBoardLoading(false);
+    setIsAiLoading(false);
     setChartData(null);
+    setAnalysisText('');
     setSelectedCungIndex(null);
   };
 
@@ -156,7 +196,7 @@ export default function App() {
                 Tử Vi Đẩu Số Toàn Thư
               </h1>
               <p className="text-xs text-[#8c7f6e]">
-                An sao chính xác 100% theo cổ thư & Thuật số phong thủy
+                An sao chính xác 100% theo cổ thư & Thuật số phong thủy tích hợp AI
               </p>
             </div>
           </div>
@@ -194,6 +234,7 @@ export default function App() {
         {activeTab === 'compatibility' ? (
           <CompatibilityView
             savedProfiles={savedProfiles}
+            apiKey={apiKey}
             onOpenHistory={() => setIsHistoryOpen(true)}
           />
         ) : !chartData ? (
@@ -204,7 +245,7 @@ export default function App() {
                 Tra Cứu & Lập Lá Số Tử Vi
               </h2>
               <p className="text-sm text-[#786d5e]">
-                Thuật toán Tử Vi Đẩu Số cổ truyền giúp tra cứu 12 cung vị, đắc hãm và ý nghĩa từng tinh tú chính xác.
+                Thuật toán Tử Vi Đẩu Số cổ truyền giúp tra cứu 12 cung vị, đắc hãm và luận giải chuyên sâu cùng Thầy AI.
               </p>
             </div>
 
@@ -213,6 +254,8 @@ export default function App() {
               setFormData={setFormData}
               onSubmit={handleGenerateChart}
               loading={loading}
+              apiKey={apiKey}
+              setApiKey={setApiKey}
               onOpenHistory={() => setIsHistoryOpen(true)}
               historyCount={savedProfiles.length}
             />
@@ -233,6 +276,22 @@ export default function App() {
               </div>
 
               <div className="flex items-center gap-2">
+                {/* Nút bật tắt Luận Giải AI */}
+                <button
+                  onClick={() => setIsAiAnalysisOpen(!isAiAnalysisOpen)}
+                  className={`text-xs font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition-all cursor-pointer border shadow-2xs ${
+                    isAiAnalysisOpen
+                      ? 'bg-[#fef7ee] text-[#c48b4d] border-[#fbd38d]'
+                      : 'bg-[#faf7f0] hover:bg-[#ede7da] text-[#5e5343] border-[#e8e3d7]'
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-[#c48b4d]" />
+                  <span>{isAiAnalysisOpen ? 'Đang Mở Luận Giải AI' : 'Mở Luận Giải AI'}</span>
+                  {isAiLoading && (
+                    <span className="w-2 h-2 rounded-full bg-[#f59e0b] animate-ping ml-0.5"></span>
+                  )}
+                </button>
+
                 <button
                   onClick={() => setIsHistoryOpen(true)}
                   className="text-xs font-semibold px-3 py-1.5 rounded-lg bg-[#faf7f0] hover:bg-[#ede7da] text-[#5e5343] flex items-center gap-1.5 transition-colors border border-[#e8e3d7] cursor-pointer"
@@ -248,18 +307,44 @@ export default function App() {
               </div>
             </div>
 
-            {/* Bàn Lá Số Chiếm Trọn Chiều Ngang */}
-            <div className="w-full space-y-6">
-              <TuViBoard
-                chartData={chartData}
-                selectedCungIndex={selectedCungIndex}
-                onSelectCung={(idx) => setSelectedCungIndex(idx)}
-                isLoading={isBoardLoading}
-              />
-            </div>
+            {/* Layout: Bàn Lá Số + Bảng Luận Giải AI */}
+            {isAiAnalysisOpen ? (
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+                <div className="lg:col-span-7 xl:col-span-7 space-y-4">
+                  <TuViBoard
+                    chartData={chartData}
+                    selectedCungIndex={selectedCungIndex}
+                    onSelectCung={(idx) => setSelectedCungIndex(idx)}
+                    isLoading={isBoardLoading}
+                  />
+                </div>
+                <div className="lg:col-span-5 xl:col-span-5">
+                  <AiAnalysisView
+                    analysisText={analysisText}
+                    selectedCung={chartData.cungList[selectedCungIndex]}
+                    isLoading={isAiLoading}
+                    onClose={() => setIsAiAnalysisOpen(false)}
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="w-full space-y-6">
+                <TuViBoard
+                  chartData={chartData}
+                  selectedCungIndex={selectedCungIndex}
+                  onSelectCung={(idx) => setSelectedCungIndex(idx)}
+                  isLoading={isBoardLoading}
+                />
+              </div>
+            )}
           </div>
         )}
       </div>
+
+      {/* Trợ Lý AI Chatbot Nổi (Floating Chat Widget) */}
+      {chartData && (
+        <FloatingChatWidget chartData={chartData} apiKey={apiKey} />
+      )}
     </div>
   );
 }

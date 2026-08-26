@@ -3,15 +3,105 @@
  */
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
-// Danh sách các model AI thế hệ mới theo thứ tự ưu tiên
+// Danh sách các model Gemini AI thế hệ mới nhất theo thứ tự ưu tiên
 const CANDIDATE_MODELS = [
-  "gemini-3.6-flash",
   "gemini-3.7-flash",
-  "gemini-3.5-flash"
+  "gemini-3.6-flash",
+  "gemini-3.5-flash",
+  "gemini-3-flash-preview",
+  "gemini-2.5-flash",
+  "gemini-2.5-pro",
+  "gemini-flash-latest"
 ];
 
+function getEffectiveApiKey(customKey = "") {
+  return (
+    (customKey || "").trim() ||
+    (typeof import.meta !== "undefined" && import.meta.env?.VITE_GEMINI_API_KEY ? import.meta.env.VITE_GEMINI_API_KEY.trim() : "")
+  );
+}
+
+async function callGeminiStream(prompt, key, onStreamChunk = null) {
+  for (const modelName of CANDIDATE_MODELS) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:streamGenerateContent?alt=sse&key=${key}`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }]
+        })
+      });
+
+      if (!response.ok) {
+        continue;
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulated = "";
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value, { stream: true });
+        const lines = chunk.split("\n");
+        for (const line of lines) {
+          if (line.startsWith("data: ")) {
+            try {
+              const json = JSON.parse(line.slice(6));
+              const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
+              if (text) {
+                accumulated += text;
+                if (typeof onStreamChunk === "function") {
+                  onStreamChunk(accumulated);
+                }
+              }
+            } catch (e) {}
+          }
+        }
+      }
+
+      if (accumulated && accumulated.length > 50) {
+        return accumulated;
+      }
+    } catch (err) {
+      console.warn(`Model ${modelName} stream failed:`, err?.message || err);
+    }
+  }
+
+  // Fallback non-streaming REST nếu stream SSE bị chặn
+  for (const modelName of CANDIDATE_MODELS) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${key}`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [{ parts: [{ text: prompt }] }]
+        })
+      });
+
+      if (response.ok) {
+        const json = await response.json();
+        const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text && text.length > 50) {
+          if (typeof onStreamChunk === "function") {
+            onStreamChunk(text);
+          }
+          return text;
+        }
+      }
+    } catch (err) {
+      console.warn(`Model ${modelName} direct failed:`, err?.message || err);
+    }
+  }
+
+  return null;
+}
+
 export async function analyzeTuViWithAI(chartData, apiKey = "", onStreamChunk = null) {
-  const key = (apiKey || "").trim();
+  const key = getEffectiveApiKey(apiKey);
   
   if (key.length > 10) {
     const prompt = `
@@ -41,37 +131,9 @@ BẮT ĐẦU NGAY VỚI 5 MỤC DƯỚI ĐÂY:
 - Phân tích sao lưu chiếu năm ${chartData.info.viewYear}, lời khuyên tu tâm dưỡng tính và tích phước cải vận.
 `;
 
-    const genAI = new GoogleGenerativeAI(key);
-
-    for (const modelName of CANDIDATE_MODELS) {
-      try {
-        const model = genAI.getGenerativeModel({ model: modelName });
-        
-        // Sử dụng Streaming Response để chữ xuất hiện liên tục ngay lập tức
-        if (typeof onStreamChunk === 'function') {
-          const resultStream = await model.generateContentStream(prompt);
-          let accumulated = "";
-          for await (const chunk of resultStream.stream) {
-            const chunkText = chunk.text();
-            if (chunkText) {
-              accumulated += chunkText;
-              onStreamChunk(accumulated);
-            }
-          }
-          if (accumulated && accumulated.length > 50) {
-            return accumulated;
-          }
-        } else {
-          const result = await model.generateContent(prompt);
-          const response = await result.response;
-          const text = response.text();
-          if (text && text.length > 50) {
-            return text;
-          }
-        }
-      } catch (err) {
-        console.warn(`Model ${modelName} failed, trying next candidate:`, err?.message || err);
-      }
+    const aiText = await callGeminiStream(prompt, key, onStreamChunk);
+    if (aiText) {
+      return aiText;
     }
   }
 
@@ -281,15 +343,55 @@ export function generateDynamicExpertInterpretation(chartData) {
   • *"Tâm an vạn sự thái, Đức dày phước tự sinh"* — Luôn giữ gìn sự chính trực, gieo nhiều hạt giống thiện lành và tương trợ mọi người xung quanh để mở rộng vận khí hanh thông trường cửu.`;
 }
 
+async function callGeminiChat(systemContext, messageHistory, newMessage, key) {
+  const contents = [];
+  for (const m of messageHistory.slice(-4)) {
+    contents.push({
+      role: m.sender === 'user' ? 'user' : 'model',
+      parts: [{ text: m.text }]
+    });
+  }
+  contents.push({
+    role: 'user',
+    parts: [{ text: newMessage }]
+  });
+
+  for (const modelName of CANDIDATE_MODELS) {
+    try {
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${key}`;
+      const response = await fetch(url, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          systemInstruction: {
+            parts: [{ text: systemContext }]
+          },
+          contents
+        })
+      });
+
+      if (response.ok) {
+        const json = await response.json();
+        const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
+        if (text && text.trim().length > 0) {
+          return text;
+        }
+      }
+    } catch (err) {
+      console.warn(`Chat model ${modelName} failed:`, err?.message || err);
+    }
+  }
+
+  return null;
+}
+
 /**
  * Trả lời thông minh khi trò chuyện với Chatbot Thầy Tử Vi
  */
 export async function askTuViChatbot(chartData, messageHistory, newMessage, apiKey = "") {
-  const key = (apiKey || "").trim();
+  const key = getEffectiveApiKey(apiKey);
 
   if (key.length > 10) {
-    const genAI = new GoogleGenerativeAI(key);
-    
     const systemContext = `Bạn là Thầy Tử Vi uyên bác, am tường Huyền Học Đông Phương và Tử Vi Đẩu Số Toàn Thư.
 Đang tư vấn trực tiếp cho đương số:
 - Họ tên: ${chartData.info.name}
@@ -311,18 +413,9 @@ Câu hỏi mới của người xem: "${newMessage}"
 
 Hãy trả lời bằng tiếng Việt, văn phong điềm đạm, uyên bác, ân cần, giải thích cặn kẽ dựa trên lý luận ngũ hành, sao chiếu và cung vị thực tế của đương số.`;
 
-    for (const modelName of CANDIDATE_MODELS) {
-      try {
-        const model = genAI.getGenerativeModel({ model: modelName });
-        const result = await model.generateContent(systemContext);
-        const response = await result.response;
-        const text = response.text();
-        if (text && text.trim().length > 0) {
-          return text;
-        }
-      } catch (err) {
-        console.warn(`Chat model ${modelName} failed, trying next candidate:`, err?.message || err);
-      }
+    const chatReply = await callGeminiChat(systemContext, messageHistory, newMessage, key);
+    if (chatReply) {
+      return chatReply;
     }
   }
 
@@ -373,7 +466,7 @@ function generateDynamicLocalChatResponse(chartData, question) {
  * Phân tích Luận Giải So Đôi 2 Lá Số (Synastry / Tương Hợp) bằng Gemini AI
  */
 export async function analyzeCompatibilityWithAI(compatResult, apiKey = "", onStreamChunk = null) {
-  const key = (apiKey || "").trim();
+  const key = getEffectiveApiKey(apiKey);
   const { info1, info2, totalScore, overallRating, pillars, compareType } = compatResult;
   const isMarriage = compareType === 'marriage';
 
@@ -412,35 +505,9 @@ BẮT ĐẦU NGAY VỚI 5 MỤC DƯỚI ĐÂY:
 - Hướng dẫn cụ thể cách hóa giải điểm xung khắc (nếu có), chọn năm tốt sinh con / mở rộng kinh doanh, phong thủy nhà ở / văn phòng và thái độ ứng xử để bền chặt lâu dài.
 `;
 
-    const genAI = new GoogleGenerativeAI(key);
-
-    for (const modelName of CANDIDATE_MODELS) {
-      try {
-        const model = genAI.getGenerativeModel({ model: modelName });
-        if (typeof onStreamChunk === 'function') {
-          const resultStream = await model.generateContentStream(prompt);
-          let accumulated = "";
-          for await (const chunk of resultStream.stream) {
-            const chunkText = chunk.text();
-            if (chunkText) {
-              accumulated += chunkText;
-              onStreamChunk(accumulated);
-            }
-          }
-          if (accumulated && accumulated.length > 50) {
-            return accumulated;
-          }
-        } else {
-          const result = await model.generateContent(prompt);
-          const response = await result.response;
-          const text = response.text();
-          if (text && text.length > 50) {
-            return text;
-          }
-        }
-      } catch (err) {
-        console.warn(`Model ${modelName} failed for compatibility, trying next:`, err?.message || err);
-      }
+    const aiText = await callGeminiStream(prompt, key, onStreamChunk);
+    if (aiText) {
+      return aiText;
     }
   }
 

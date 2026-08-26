@@ -7,13 +7,25 @@ export default function InputForm({
   setFormData, 
   onSubmit, 
   loading, 
+  apiKey = '',
+  setApiKey,
   onOpenHistory, 
   historyCount = 0 
 }) {
+  const [showApiConfig, setShowApiConfig] = React.useState(false);
 
   const handleSubmit = (e) => {
     e.preventDefault();
     onSubmit(formData);
+  };
+
+  const handleApiKeyChange = (val) => {
+    if (setApiKey) {
+      setApiKey(val);
+      try {
+        localStorage.setItem('tuvi_gemini_api_key', val);
+      } catch (e) {}
+    }
   };
 
   return (
@@ -160,17 +172,55 @@ export default function InputForm({
             </div>
           </div>
 
+          {/* Cấu hình Gemini AI API Key (Tùy chọn) */}
+          <div className="pt-1">
+            <button
+              type="button"
+              onClick={() => setShowApiConfig(!showApiConfig)}
+              className="text-[11.5px] font-semibold text-[#8c7f6e] hover:text-[#c48b4d] flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <Sparkles className="w-3.5 h-3.5 text-[#c48b4d]" />
+              <span>{showApiConfig ? 'Ẩn cài đặt Gemini AI' : 'Cấu hình Gemini AI Key (Tùy chọn)'}</span>
+              {apiKey && (
+                <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block" title="Đã cấu hình API key"></span>
+              )}
+            </button>
+
+            {showApiConfig && (
+              <div className="mt-2 p-3 rounded-xl bg-[#faf7f0] border border-[#e8e2d5] space-y-1.5 animate-in fade-in duration-200">
+                <div className="flex justify-between items-center">
+                  <label className="text-[11px] font-bold text-[#4d4234]">
+                    Gemini API Key (Tùy chọn)
+                  </label>
+                  <span className="text-[10px] text-[#8c7f6e]">
+                    Mặc định dùng Engine Luận Giải Tự Động
+                  </span>
+                </div>
+                <input
+                  type="password"
+                  className="warm-input text-xs py-1.5"
+                  value={apiKey}
+                  onChange={(e) => handleApiKeyChange(e.target.value)}
+                  placeholder="AIzaSy... (Để trống vẫn chạy bình thường với Engine chuyên sâu)"
+                />
+                <p className="text-[10.5px] text-[#786d5e]">
+                  💡 Nhập API key nếu muốn sử dụng mô hình Gemini 2.5 Flash để sinh lời văn luận giải tùy biến.
+                </p>
+              </div>
+            )}
+          </div>
+
           {/* Nút Submit */}
-          <div className="pt-3">
+          <div className="pt-2">
             <button
               type="submit"
               disabled={loading}
-              className="warm-btn-primary w-full py-2.5 font-semibold text-sm flex items-center justify-center gap-2"
+              className="warm-btn-primary w-full py-2.5 font-semibold text-sm flex items-center justify-center gap-2 cursor-pointer shadow-xs"
             >
               {loading ? (
                 <>
                   <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Đang lập lá số...
+                  Đang lập lá số & đối chiếu...
                 </>
               ) : (
                 <>
